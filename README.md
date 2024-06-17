@@ -1,6 +1,7 @@
 # Caissa
 
 [![Example board](static/brand/example_board.png)]
+> Note: piece assets are from https://chess.com/
 
 Move calculating checklist:
 - [x] Pawn capture
@@ -14,4 +15,4 @@ Move calculating checklist:
 - [x] Check coercion
 - [x] Check dodging
 - [x] Promotion (only for queen)
-- [ ] Castling
+- [x] Castling

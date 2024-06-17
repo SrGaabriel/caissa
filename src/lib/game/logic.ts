@@ -7,7 +7,7 @@ import {
     calculateMovesForRook
 } from '$lib/math/moveCalculator';
 import { isCoordinateInsideMatrix } from '$lib/util/matrix';
-import { cloneState, defaultState } from '$lib/game/state';
+import { cloneState, updateCastlingState } from '$lib/game/state';
 
 export enum PieceType {
     KING,
@@ -28,6 +28,11 @@ export type Piece = {
     team: Team
 }
 
+export enum Side {
+    KINGSIDE,
+    QUEENSIDE
+}
+
 export default class BoardLogic {
     board: (Piece | null)[][];
     state: BoardState
@@ -46,7 +51,6 @@ export default class BoardLogic {
     }
 
     getAllMovesForTeam(team: Team): number[][] {
-        console.log("calcualte all moves for team", team)
         let moves: number[][] = []
         for (let y = 1; y <= 8; y++) {
             for (let x = 1; x <= 8; x++) {
@@ -70,6 +74,25 @@ export default class BoardLogic {
             }
         }
         return spaces;
+    }
+
+    isCastlingAvailable(team: Team): boolean {
+        switch (team) {
+            case Team.White:
+                return this.state.castling.whiteKingSide || this.state.castling.whiteQueenSide;
+            case Team.Black:
+                return this.state.castling.blackKingSide || this.state.castling.blackQueenSide;
+            default:
+                return false;
+        }
+    }
+
+    getSide(x: number): Side {
+        return x < 5 ? Side.QUEENSIDE : Side.KINGSIDE
+    }
+
+    getBoardYStartForTeam(team: Team): number {
+        return team === Team.White? 1 : 8;
     }
 
     getBoardYEndForTeam(team: Team): number {
@@ -109,6 +132,27 @@ export default class BoardLogic {
             if (piece.type == PieceType.PAWN && futureY == this.getBoardYEndForTeam(piece.team)) {
                 piece.type = PieceType.QUEEN;
             }
+            if (piece.type == PieceType.ROOK && currentY == this.getBoardYStartForTeam(piece.team)) {
+                if (currentX == 1 || currentX == 8) {
+                    const side = this.getSide(currentX);
+                    updateCastlingState(this.state, piece.team, side, false);
+                }
+            }
+            if (piece.type == PieceType.KING) {
+                if (Math.abs(futureX - currentX) === 2) {
+                    const rookX = futureX - currentX === 2 ? 8 : 1;
+                    const rookFutureX = futureX - currentX === 2 ? 6 : 4;
+                    this.movePiece(rookX, currentY, rookFutureX, currentY, false);
+                }
+                if (piece.team == Team.White) {
+                    this.state.castling.whiteQueenSide = false;
+                    this.state.castling.whiteKingSide = false;
+                } else {
+                    this.state.castling.blackQueenSide = false;
+                    this.state.castling.blackKingSide = false;
+                }
+            }
+            this.state.teamToPlay = piece.team === Team.White ? Team.Black : Team.White;
         }
         this.board[currentY-1][currentX-1] = null;
         this.board[futureY-1][futureX-1] = piece;
@@ -172,7 +216,8 @@ export default class BoardLogic {
     }
 
     static fromFEN(fen: string): BoardLogic {
-        const rows = fen.split(' ')[0].split('/');
+        const sectors = fen.split(' ');
+        const rows = sectors[0].split('/');
         const board = [];
 
         const pieceFactory: { [key: string]: () => Piece } = {
@@ -203,7 +248,16 @@ export default class BoardLogic {
             }
             board.push(boardRow);
         }
-
-        return new BoardLogic(board.reverse(), defaultState());
+        const turn = sectors[1] == 'b' ? Team.Black : Team.White;
+        const castlingAvailability = sectors[2]
+        return new BoardLogic(board.reverse(), {
+            teamToPlay: turn,
+            castling: {
+                whiteKingSide: castlingAvailability.includes('K'),
+                whiteQueenSide: castlingAvailability.includes('Q'),
+                blackKingSide: castlingAvailability.includes('k'),
+                blackQueenSide: castlingAvailability.includes('q')
+            }
+        });
     }
 }

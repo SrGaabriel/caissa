@@ -5,16 +5,16 @@
     type Cell = {
         x: number,
         y: number,
-        piece: Piece | null,
         highlighting: Highlighting | null,
     }
 
-    const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
+    // const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
     // const fen = `1nq2b1r/rb6/1ppp1npp/p7/4P1PP/2NPk2B/PPP2p1N/RQ2K1R1 w Q - 0 25`;
+    const fen = `r1b2rk1/pp1n1ppp/2p2n2/q2pp1B1/1bPP4/2N1P3/PPQNBPPP/R3K2R w KQ - 0 10`
     let board = BoardLogic.fromFEN(fen);
     let cells: Cell[] = [];
     let selectedCell: Cell | null = null;
-    let teamToPlay = board.state.teamToPlay;
+    $: teamToPlay = board.state.teamToPlay;
     let availableMoves = board.getAllMovesForTeam(teamToPlay).length;
     drawBoard(Team.White);
 
@@ -23,7 +23,6 @@
             cells.push({
                 x: col,
                 y: row,
-                piece: board.getPieceAt(col, row),
                 highlighting: null
             });
         }
@@ -55,11 +54,8 @@
         }
     }
 
-    function animateMove(currentCell: Cell, futureCell: Cell) {
-        futureCell.piece = currentCell.piece;
-        currentCell.piece = null;
+    function updatePage() {
         board = board;
-        teamToPlay = teamToPlay == Team.White ? Team.Black : Team.White;
         availableMoves = board.getAllMovesForTeam(teamToPlay).length;
     }
 
@@ -79,15 +75,17 @@
 
         const cell = findCell(x, y);
         if (!cell) return;
-        if (selectedCell && selectedCell.piece) { // If the player is trying to click on another cell while he already has one selected...
-            if (cell.piece && cell.piece.team == selectedCell.piece.team) { // If the player is trying to switch attacking pieces...
+        const piece = board.getPieceAt(x,y);
+        if (selectedCell && board.getPieceAt(selectedCell.x, selectedCell.y)) { // If the player is trying to click on another cell while he already has one selected...
+            const selectedPiece = board.getPieceAt(selectedCell.x, selectedCell.y)!;
+            if (piece && piece.team == selectedPiece.team) { // If the player is trying to switch attacking pieces...
                 selectPiece(cell);
-                if (cell.piece.team === teamToPlay) {
+                if (piece.team === teamToPlay) {
                     highlightPossibleMoves(x, y);
                 }
                 return;
             }
-            if (teamToPlay !== selectedCell.piece.team) { // If the player is trying to move outside his turn...
+            if (teamToPlay !== selectedPiece.team) { // If the player is trying to move outside his turn...
                 clearHighlights(false);
                 cell.highlighting = Highlighting.SELECTED; // We just switch his apparently selected pieces
                 cells = cells;
@@ -95,15 +93,15 @@
             } // Otherwise, we move
             const move = board.tryToMovePiece(selectedCell.x, selectedCell.y, x, y);
             if (move) {
-                animateMove(selectedCell, cell);
+                updatePage();
                 selectedCell = null;
                 clearHighlights();
             }
             return;
         }
         // If the player is trying to select a piece...
-        if (!cell.piece) return;
-        if (cell.piece.team === teamToPlay) {
+        if (!piece) return;
+        if (piece.team === teamToPlay) {
             selectPiece(cell);
             highlightPossibleMoves(x, y);
         } else {
@@ -113,7 +111,6 @@
     }
 
     function selectPiece(cell: Cell) {
-        if (!cell.piece) return;
         clearHighlights(false);
         cell.highlighting = Highlighting.SELECTED;
         selectedCell = cell;
@@ -154,16 +151,16 @@
                 id={`cell-${cell.x}-${cell.y}`}
                 data-xpos={cell.x}
                 data-ypos={cell.y}
-                data-haspiece={!(!cell.piece)}
+                data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
                 data-highlighting={cell.highlighting}
                 on:click={handleSquareClick}
                 class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
             >
-                {#if cell.piece}
-                    <img src={`${getPieceAsset(cell.piece)}`} data-xpos={cell.x} data-ypos={cell.y} class="pieceAsset"
+                {#if board.getPieceAt(cell.x,cell.y) != null}
+                    <img src={`${getPieceAsset(board.getPieceAt(cell.x,cell.y))}`} data-xpos={cell.x} data-ypos={cell.y} class="pieceAsset"
                          height=96/>
                 {/if}
-                {#if cell.highlighting === Highlighting.POSSIBLE_MOVE && cell.piece}
+                {#if cell.highlighting === Highlighting.POSSIBLE_MOVE && board.getPieceAt(cell.x,cell.y)}
                     <span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture"></span>
                 {:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
                     <span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace"></span>
@@ -176,6 +173,10 @@
         <p>Available moves: {availableMoves}</p>
         <p>Is white in check? {board.isTeamInCheck(Team.White)}</p>
         <p>Is black in check? {board.isTeamInCheck(Team.Black)}</p>
+        <p>White queenside castle: {board.state.castling.whiteQueenSide}</p>
+        <p>White kingside castle: {board.state.castling.whiteKingSide}</p>
+        <p>Black queenside castle: {board.state.castling.blackQueenSide}</p>
+        <p>Black kingside castle: {board.state.castling.blackKingSide}</p>
         <p>Game over? {availableMoves === 0 && board.isTeamInCheck(teamToPlay)}</p>
     </div>
 </main>

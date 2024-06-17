@@ -1,4 +1,4 @@
-import BoardLogic, { Team } from '$lib/game/logic.js';
+import BoardLogic, { Side, Team } from '$lib/game/logic.js';
 import { isCoordinateInsideMatrix } from '$lib/util/matrix';
 
 const KNIGHT_DIRECTIONS = [
@@ -101,7 +101,15 @@ export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, 
         if (!board.isPositionValid(newX, newY)) {
             continue;
         }
-        if (smart && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) { // Values have to be inverted
+        if (board.isCastlingAvailable(team)) {
+            if (hasCastlingSpace(board, x, y, Side.QUEENSIDE)) {
+                moves.push([x - 2, y]);
+            }
+            if (hasCastlingSpace(board, x, y, Side.KINGSIDE)) {
+                moves.push([x + 2, y]);
+            }
+        }
+        if (smart && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) {
             continue;
         }
 
@@ -111,6 +119,19 @@ export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, 
         moves.push([newX, newY]);
     }
     return moves;
+}
+
+export function hasCastlingSpace(board: BoardLogic, x: number, y: number, side: Side): boolean {
+    const orientation = side === Side.QUEENSIDE ? -1 : 1;
+    const rook = side === Side.QUEENSIDE ? 1 : 8;
+    for (let i = x+orientation; i != rook; i += orientation) {
+        const piece = board.getPieceAt(i, y);
+        if (piece) {
+            console.log(`While analyzing ${side === Side.QUEENSIDE ? 'QUEENSIDE' : 'KINGSIDE'} castling, ${i} got in the way`)
+            return false;
+        }
+    }
+    return true;
 }
 
 function calculateProgressiveMoves(board: BoardLogic, team: Team, x: number, y: number, directions: number[][]): number[][] {
