@@ -9,7 +9,7 @@ Move calculating checklist:
 - [x] Queen slide+cross
 - [x] King one-ranged slide+cross
 - [ ] En passant
-- [ ] Check coercion
-- [x] King check dodge
+- [x] Check coercion
+- [ ] Check dodging
 - [ ] Promotion
 - [ ] Castling
