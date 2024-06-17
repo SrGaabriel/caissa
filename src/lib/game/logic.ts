@@ -97,6 +97,10 @@ export default class BoardLogic {
         return x < 5 ? Side.QUEENSIDE : Side.KINGSIDE
     }
 
+    getYOrientation(team: Team): number {
+        return team === Team.White ? 1 : -1;
+    }
+
     getBoardYStartForTeam(team: Team): number {
         return team === Team.White? 1 : 8;
     }
@@ -158,8 +162,8 @@ export default class BoardLogic {
                     this.state.castling.blackKingSide = false;
                 }
             }
-            if (piece.type == PieceType.PAWN && futureY - currentY === 2) {
-                this.state.enPassantTargetSquare = {x: currentX, y: futureY - 1};
+            if (piece.type == PieceType.PAWN && Math.abs(futureY - currentY) === 2) {
+                this.state.enPassantTargetSquare = {x: currentX, y: futureY - this.getYOrientation(piece.team)};
             }
             if (piece.type == PieceType.PAWN && futureX != currentX) {
                 const targetPiece = this.getPieceAt(futureX, futureY);

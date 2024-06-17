@@ -36,13 +36,9 @@ const KING_QUEEN_DIRECTIONS = [
     [0, -1]
 ];
 
-export function getPawnYDirection(team: Team) {
-    return team === Team.White ? 1 : -1;
-}
-
 export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, y: number): number[][] {
     const moves = [];
-    const yDirection = getPawnYDirection(team);
+    const yDirection = board.getYOrientation(team);
     if (canPawnMarch(board, x, y, yDirection)) {
         moves.push([x, y + yDirection]);
         if ((team === Team.White && y === 2) || (team === Team.Black && y === 7)) {
