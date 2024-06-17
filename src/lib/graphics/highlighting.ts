@@ -1,3 +1,4 @@
-export default enum Highlighting {
-    POSSIBLE_MOVE = "possible"
+export enum Highlighting {
+    POSSIBLE_MOVE = "possible",
+    SELECTED = "selected"
 }

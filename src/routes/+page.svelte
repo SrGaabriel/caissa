@@ -1,115 +1,161 @@
 <script lang="ts">
-  // Generate the chessboard cells data
-  import {onMount} from "svelte";
-  import { BoardLogic, type Piece, Team } from '$lib';
-  import highlighting from '$lib/graphics/highlighting';
+    // Generate the chessboard cells data
+    import { BoardLogic, Highlighting, type Piece, Team } from '$lib';
 
-  let board = BoardLogic.DEFAULT;
-  let cells = [];
-  for (let row = 8; row >= 1; row--) {
-    for (let col = 1; col <= 8; col++) {
-      cells.push({
-        x: col,
-        y: row,
-        highlighting: null,
-        color: (row + col) % 2 === 0 ? 'black' : 'white'
-      });
+    type Cell = {
+        x: number,
+        y: number,
+        piece: Piece | null,
+        highlighting: Highlighting | null,
     }
-  }
 
-  function highlightCell(x: number, y: number) {
-    const cell = document.getElementById(`cell-${x}-${y}`);
-    if (cell) {
-      cell.style.backgroundColor = 'red';
+    const fen = 'rnb1k1n1/ppp2pp1/3p1qr1/2b1p1Bp/3P2P1/1P1Q1NR1/P1P1PP1P/RN2KB2 b Qq - 1 8';
+    const board = BoardLogic.fromFEN(fen);
+    let cells: Cell[] = [];
+    drawBoard(Team.Black);
+
+    function drawBoard(team: Team) {
+        function pushCell(col: number, row: number) {
+            cells.push({
+                x: col,
+                y: row,
+                piece: board.getPieceAt(col, row),
+                highlighting: null
+            });
+        }
+
+        if (team === Team.Black) {
+            for (let row = 1; row <= 8; row++) { // Y
+                for (let col = 8; col >= 1; col--) { // X
+                    pushCell(col, row);
+                }
+            }
+        } else {
+            for (let row = 8; row >= 1; row--) { // Y
+                for (let col = 1; col <= 8; col++) { // X
+                    pushCell(col, row);
+                }
+            }
+        }
     }
-  }
 
-  function drawBoard() {
-    for (let row = 1; row <= 8; row++) {
-      for (let col = 1; col <= 8; col++) {
-        drawPiece(col, row, board.getPieceAt(col, row));
-      }
+    function findCell(x: number, y: number): Cell | undefined {
+        return cells.find(cell => cell.x === x && cell.y === y);
     }
-  }
 
-  function drawPiece(x: number, y: number, piece: Piece | null) {
-    const cell = document.getElementById(`cell-${x}-${y}`);
-    if (!cell) {
-      console.log(`Cell ${x-1}-${y-1} not found`);
+    function highlightCell(x: number, y: number, marker: Highlighting) {
+        const cell = findCell(x, y);
+        if (cell) {
+            cell.highlighting = marker;
+            cells = cells;
+        }
     }
-    if (cell && piece) {
-      const image = document.createElement("img");
-      const teamName = piece.team == Team.White ? "white" : "black";
-      image.src = `/pieces/neo_${teamName}_${board.getPieceName(piece.type).toLowerCase()}.png`
-      image.height = 100
-      image.dataset.xpos = x.toString();
-      image.dataset.ypos = y.toString();
-      cell.appendChild(image);
+
+    function handleSquareClick(event: Event) {
+        console.log(cells[0], cells[1], cells[8]);
+        const element = event.target as HTMLElement;
+        if (!element.dataset.xpos || !element.dataset.ypos) {
+            console.error('Element inside cell not identified');
+            return;
+        }
+        const x: number = +element.dataset.xpos;
+        const y: number = +element.dataset.ypos;
+
+        highlightPossibleMoves(x, y);
     }
-  }
 
-  function handleSquareClick(event: Event) {
-    const cell = event.target as HTMLElement;
-    if (!cell.dataset.xpos || !cell.dataset.ypos) {
-      console.error("Element inside cell not identified");
-      return;
+    function highlightPossibleMoves(x: number, y: number) {
+        const moves = board.calculateMovesFor(x, y);
+        moves.forEach(move => {
+            highlightCell(move[0], move[1], Highlighting.POSSIBLE_MOVE);
+        });
     }
-    
-    const x: number = +cell.dataset.xpos;
-    const y: number = +cell.dataset.ypos;
-    cell.style.backgroundColor = 'blue';
-    console.log(x, y);
-    highlightPossibleMoves(x,y);
-  }
 
-  function highlightPossibleMoves(x: number, y: number) {
-    const moves = board.calculateMovesFor(x,y);
-    moves.forEach(move => {
-      highlightCell(move[0], move[1]);
-    });
-  }
-
-  onMount(() => {
-    drawBoard();
-  });
+    function getPieceAsset(piece: Piece): string {
+        const teamName = piece.team == Team.White ? 'white' : 'black';
+        return `/pieces/neo_${teamName}_${board.getPieceName(piece.type).toLowerCase()}.png`;
+    }
 </script>
 
 <main>
-  <div id="chessboard">
-    {#each cells as cell}
-      <div id={`cell-${cell.x}-${cell.y}`} data-xpos={cell.x} data-ypos={cell.y} on:click={handleSquareClick} class="cell {cell.color}"></div>
-    {/each}
-  </div>
+    <div id="chessboard">
+        {#each cells as cell}
+            <div
+                id={`cell-${cell.x}-${cell.y}`}
+                data-xpos={cell.x}
+                data-ypos={cell.y}
+                data-haspiece={!(!cell.piece)}
+                data-highlighting={cell.highlighting}
+                on:click={handleSquareClick}
+                class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
+            >
+                {#if cell.piece}
+                    <img src={`${getPieceAsset(cell.piece)}`} data-xpos={cell.x} data-ypos={cell.y} class="pieceAsset"
+                         height=96/>
+                {/if}
+                {#if cell.highlighting === Highlighting.POSSIBLE_MOVE && cell.piece}
+                    <span class="possibleCapture"></span>
+                {:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
+                    <span class="possibleSpace"></span>
+                {/if}
+            </div>
+        {/each}
+    </div>
 </main>
 
 <style>
-  main {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-    height: 98vh;
-    width: 99vw;
-  }
+    main {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+        height: 98vh;
+        width: 99vw;
+    }
 
-  #chessboard {
-    display: grid;
-    grid-template-columns: repeat(8, 100px);
-    grid-template-rows: repeat(8, 100px);
-    gap: 0;
-  }
-  
-  .cell {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .cell.black {
-    background-color: #769656;
-  }
+    #chessboard {
+        display: grid;
+        grid-template-columns: repeat(8, 100px);
+        grid-template-rows: repeat(8, 100px);
+        gap: 0;
+    }
 
-  .cell.white {
-    background-color: #eeeed2;
-  }
+    .cell {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .cell[data-haspiece="true"] {
+        cursor: pointer;
+    }
+
+    .possibleCapture {
+        position: absolute;
+        aspect-ratio: 1/1;
+        width: 80%;
+        background-color: transparent;
+        border-radius: 100%;
+        border: solid 8px black;
+        opacity: 0.15;
+        z-index: 0;
+    }
+
+    .possibleSpace {
+        position: absolute;
+        aspect-ratio: 1/1;
+        width: 30%;
+        background-color: black;
+        border-radius: 100%;
+        opacity: 0.15;
+    }
+
+    .cell.black {
+        background-color: #769656;
+    }
+
+    .cell.white {
+        background-color: #eeeed2;
+    }
 </style>
