@@ -1,5 +1,7 @@
 # Caissa
 
+[![Example board](static/brand/example_board.png)]
+
 Move calculating checklist:
 - [x] Pawn capture
 - [x] Pawn march
@@ -10,6 +12,6 @@ Move calculating checklist:
 - [x] King one-ranged slide+cross
 - [ ] En passant
 - [x] Check coercion
-- [ ] Check dodging
-- [ ] Promotion
+- [x] Check dodging
+- [x] Promotion (only for queen)
 - [ ] Castling

@@ -10,10 +10,12 @@
     }
 
     const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
-    const board = BoardLogic.fromFEN(fen);
+    // const fen = `1nq2b1r/rb6/1ppp1npp/p7/4P1PP/2NPk2B/PPP2p1N/RQ2K1R1 w Q - 0 25`;
+    let board = BoardLogic.fromFEN(fen);
     let cells: Cell[] = [];
     let selectedCell: Cell | null = null;
-    let teamToPlay: Team = Team.White;
+    let teamToPlay = board.state.teamToPlay;
+    let availableMoves = board.getAllMovesForTeam(teamToPlay).length;
     drawBoard(Team.White);
 
     function drawBoard(team: Team) {
@@ -56,11 +58,12 @@
     function animateMove(currentCell: Cell, futureCell: Cell) {
         futureCell.piece = currentCell.piece;
         currentCell.piece = null;
+        board = board;
         teamToPlay = teamToPlay == Team.White ? Team.Black : Team.White;
+        availableMoves = board.getAllMovesForTeam(teamToPlay).length;
     }
 
     function handleSquareClick(event: Event) {
-        console.log(cells[0], cells[1], cells[8]);
         const element = event.target as HTMLElement;
         if (!element.dataset.xpos || !element.dataset.ypos) {
             console.error(`Element inside cell not identified: ${element.nodeName}`);
@@ -168,6 +171,13 @@
             </div>
         {/each}
     </div>
+    <div id="sidebar">
+        <p>Turn: {teamToPlay === 0 ? 'White' : 'Black'}</p>
+        <p>Available moves: {availableMoves}</p>
+        <p>Is white in check? {board.isTeamInCheck(Team.White)}</p>
+        <p>Is black in check? {board.isTeamInCheck(Team.Black)}</p>
+        <p>Game over? {availableMoves === 0 && board.isTeamInCheck(teamToPlay)}</p>
+    </div>
 </main>
 
 <style>
@@ -178,6 +188,15 @@
         margin: 0;
         height: 98vh;
         width: 99vw;
+    }
+
+    #sidebar {
+        background-color: #3f3e3e;
+        width: 400px;
+        height: 800px;
+        color: azure;
+        font-weight: 600;
+        font-family: sans-serif;
     }
 
     #chessboard {

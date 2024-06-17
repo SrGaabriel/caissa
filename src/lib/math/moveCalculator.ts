@@ -1,4 +1,4 @@
-import BoardLogic, { Team } from '../logic/board.js';
+import BoardLogic, { Team } from '$lib/game/logic.js';
 import { isCoordinateInsideMatrix } from '$lib/util/matrix';
 
 const KNIGHT_DIRECTIONS = [
@@ -69,7 +69,6 @@ export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, 
 
 function canPawnMarch(board: BoardLogic, x: number, y: number, steps: number): boolean {
     const newY = y + steps;
-    console.log(x, newY, "march!");
     const impedingPiece = board.getPieceAt(x, newY);
     return !impedingPiece;
 }
@@ -103,7 +102,6 @@ export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, 
             continue;
         }
         if (smart && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) { // Values have to be inverted
-            console.log(newX, newY, "is inside!")
             continue;
         }
 
