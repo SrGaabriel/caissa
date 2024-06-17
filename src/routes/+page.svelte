@@ -9,13 +9,21 @@
         highlighting: Highlighting | null,
     }
 
+    type CursorPosition = {
+        x: number,
+        y: number,
+    }
+
     // const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
     // const fen = `1nq2b1r/rb6/1ppp1npp/p7/4P1PP/2NPk2B/PPP2p1N/RQ2K1R1 w Q - 0 25`;
-    // const fen = `r1b2rk1/pp1n1ppp/2p2n2/q2pp1B1/1bPP4/2N1P3/PPQNBPPP/R3K2R w KQ - 0 10` // MAGNUS VS KASPAROV
-    const fen = `r3k2r/pbppqpb1/1pn3p1/7p/1N2pPn1/1PP4N/PB1P2PP/2QRKR2 b kq f3 0 1` // EN PASSANT
+    const fen = `r1b2rk1/pp1n1ppp/2p2n2/q2pp1B1/1bPP4/2N1P3/PPQNBPPP/R3K2R w KQ - 0 10` // MAGNUS VS KASPAROV
+    // const fen = `r3k2r/pbppqpb1/1pn3p1/7p/1N2pPn1/1PP4N/PB1P2PP/2QRKR2 b kq f3 0 1` // EN PASSANT
     let board = BoardLogic.fromFEN(fen);
     let cells: Cell[] = [];
     let selectedCell: Cell | null = null;
+    let draggingCell: Cell | null = null;
+    let dragTimeout: number | null = null;
+    const isScreenMirrored: boolean = false;
     $: teamToPlay = board.state.teamToPlay;
     $: availableMoves = board.getAllMovesForTeam(teamToPlay).length;
     drawBoard(Team.White);
@@ -112,6 +120,127 @@
         }
     }
 
+    function calculateCursorOffset(event: MouseEvent, chessboard: HTMLElement): CursorPosition {
+        const chessboardRect = chessboard.getBoundingClientRect();
+        const deltaX = event.clientX - chessboardRect.left
+        const deltaY = event.clientY - chessboardRect.top;
+        return {
+            x: deltaX,
+            y: deltaY
+        }
+    }
+
+    function followCursor(chessboard: HTMLElement, asset: HTMLElement, cursor: CursorPosition) {
+        asset.style.position = 'absolute';
+        asset.style.left = (cursor.x - asset.offsetWidth / 2) + 'px';
+        asset.style.top = (cursor.y - asset.offsetHeight / 2) + 'px';
+    }
+
+    function getCellUnderCursor(cursor: CursorPosition, team: Team): Cell | undefined {
+        const x = Math.max(1, Math.min(Math.floor(cursor.x / 100) + 1, 8));
+        const blackPerspectiveY = Math.max(1, Math.min(Math.floor(cursor.y / 100) + 1, 8));
+        const whitePerspectiveY = Math.abs(8 - blackPerspectiveY) + 1;
+        const y = isScreenMirrored ? (team === Team.Black ? blackPerspectiveY : whitePerspectiveY) : whitePerspectiveY;
+        return findCell(x,y);
+    }
+
+    function setConsideringCell(cell: Cell) {
+        cells.forEach((cell) => {
+           if (cell.highlighting === Highlighting.CONSIDERING) {
+               cell.highlighting = null;
+           }
+        });
+        if (draggingCell)
+            highlightPossibleMoves(draggingCell.x, draggingCell.y);
+        markCell(cell, Highlighting.CONSIDERING, true);
+    }
+
+    function handleMouseDown(event: MouseEvent) {
+        const element = event.target as HTMLElement;
+        if (!element.dataset.xpos || !element.dataset.ypos) {
+            console.error(`Element inside cell not identified: ${element.nodeName}`);
+            return;
+        }
+        const x: number = +element.dataset.xpos;
+        const y: number = +element.dataset.ypos;
+        const piece = board.getPieceAt(x,y);
+        if (!piece || piece.team !== board.state.teamToPlay) return;
+        if (!piece) return;
+
+        const cellElement = document.getElementById(`cell-${x}-${y}`);
+        const asset = document.getElementById(`asset-${x}-${y}`)!;
+        const chessboard = document.getElementById('chessboard')!;
+        const chessCell = findCell(x,y)!;
+        clearHighlights(false);
+        markCell(chessCell, Highlighting.SELECTED, false);
+        highlightPossibleMoves(x,y);
+        if (!cellElement || !element) return;
+        dragTimeout = setTimeout(() => {
+            console.log("Done")
+            cellElement.removeChild(asset);
+            chessboard.appendChild(asset);
+            draggingCell = findCell(x, y)!;
+            const cursor = calculateCursorOffset(event, chessboard);
+            followCursor(chessboard, asset, cursor);
+        }, 100);
+    }
+
+    function handleMouseMove(event: MouseEvent) {
+        if (!draggingCell) return;
+        const chessboard = document.getElementById('chessboard')!;
+        const asset = document.getElementById(`asset-${draggingCell.x}-${draggingCell.y}`)!;
+        const cursor = calculateCursorOffset(event, chessboard);
+        const piece = board.getPieceAt(draggingCell.x, draggingCell.y);
+        if (!piece) return;
+        followCursor(chessboard, asset, cursor);
+        const cellUnderCursor = getCellUnderCursor(cursor, piece.team);
+        if (!cellUnderCursor || (cellUnderCursor.x === draggingCell.x && cellUnderCursor.y === draggingCell.y)) return;
+        setConsideringCell(cellUnderCursor);
+    }
+
+    function handleMouseUp(event: MouseEvent) {
+        if (dragTimeout)
+            clearTimeout(dragTimeout);
+        if (!draggingCell) return;
+        const piece = board.getPieceAt(draggingCell.x, draggingCell.y);
+        if (!piece) return;
+        const chessboard = document.getElementById('chessboard')!;
+        const cursor = calculateCursorOffset(event, chessboard);
+        const cellUnderCursor = getCellUnderCursor(cursor, piece.team);
+        if (!cellUnderCursor) {
+            clearHighlights(false);
+            selectPiece(draggingCell);
+            highlightPossibleMoves(draggingCell.x, draggingCell.y);
+            resetPieceMovement(chessboard, false);
+            return;
+        }
+        const move = board.tryToMovePiece(draggingCell.x, draggingCell.y, cellUnderCursor.x, cellUnderCursor.y);
+        if (!move) {
+            clearHighlights(false);
+            selectPiece(draggingCell);
+            highlightPossibleMoves(draggingCell.x, draggingCell.y);
+            resetPieceMovement(chessboard, false);
+            return;
+        }
+        updatePage();
+        resetPieceMovement(chessboard, true);
+    }
+
+    function resetPieceMovement(chessboard: HTMLElement, clearAllHighlights: boolean) {
+        if (!draggingCell) return;
+        if (clearAllHighlights) {
+            clearHighlights(true);
+        }
+        const cell = document.getElementById(`cell-${draggingCell.x}-${draggingCell.y}`)!;
+        const asset = document.getElementById(`asset-${draggingCell.x}-${draggingCell.y}`)!;
+        asset.style.position = '';
+        asset.style.left = '';
+        asset.style.top = '';
+        chessboard.removeChild(asset);
+        cell.appendChild(asset);
+        draggingCell = null;
+    }
+
     function selectPiece(cell: Cell) {
         clearHighlights(false);
         cell.highlighting = Highlighting.SELECTED;
@@ -120,7 +249,7 @@
     }
 
     function markCell(cell: Cell, marker: Highlighting, update: boolean = true) {
-        cell.highlighting = Highlighting.SELECTED;
+        cell.highlighting = marker;
         if (update) {
             cells = cells;
         }
@@ -158,7 +287,7 @@
 </script>
 
 <main>
-    <div id="chessboard">
+    <div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
         {#each cells as cell}
             <div
                 id={`cell-${cell.x}-${cell.y}`}
@@ -166,17 +295,26 @@
                 data-ypos={cell.y}
                 data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
                 data-highlighting={cell.highlighting}
+                draggable="false"
                 on:click={handleSquareClick}
+                on:mousedown={handleMouseDown}
                 class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
             >
                 {#if board.getPieceAt(cell.x,cell.y) != null}
-                    <img src={`${getPieceAsset(board.getPieceAt(cell.x,cell.y))}`} data-xpos={cell.x} data-ypos={cell.y} class="pieceAsset"
-                         height=96/>
+                    <img
+                      id={`asset-${cell.x}-${cell.y}`}
+                      src={`${getPieceAsset(board.getPieceAt(cell.x,cell.y))}`}
+                      data-xpos={cell.x}
+                      data-ypos={cell.y}
+                      class="pieceAsset"
+                      draggable="false"
+                      height=96
+                    />
                 {/if}
                 {#if cell.highlighting === Highlighting.POSSIBLE_MOVE && board.getPieceAt(cell.x,cell.y)}
-                    <span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture"></span>
+                    <span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture" draggable="false"></span>
                 {:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
-                    <span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace"></span>
+                    <span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace" draggable="false"></span>
                 {/if}
             </div>
         {/each}
@@ -218,6 +356,7 @@
     }
 
     #chessboard {
+        position: relative;
         display: grid;
         grid-template-columns: repeat(8, 100px);
         grid-template-rows: repeat(8, 100px);
@@ -235,8 +374,16 @@
         cursor: pointer;
     }
 
+    .cell[data-highlighting="threatened"] {
+        background-color: indianred !important;;
+    }
+
     .cell[data-highlighting="selected"] {
         background-color: #d9d984 !important;;
+    }
+
+    .cell[data-highlighting="considering"] {
+        filter: brightness(50%);
     }
 
     .possibleCapture {
