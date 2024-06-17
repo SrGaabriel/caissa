@@ -1,9 +1,10 @@
 import { Team } from '$lib';
-import { Side } from '$lib/game/logic';
+import { Side, type Square } from '$lib/game/logic';
 
 export type BoardState = {
 	teamToPlay: Team,
-	castling: CastlingState
+	castling: CastlingState,
+	enPassantTargetSquare: Square | undefined
 }
 
 export type CastlingState = {
@@ -31,6 +32,7 @@ export function updateCastlingState(state: BoardState, team: Team, side: Side, v
 export function defaultState(): BoardState {
 	return {
     teamToPlay: Team.White,
+		enPassantTargetSquare: undefined,
     castling: {
       whiteKingSide: true,
       whiteQueenSide: true,
@@ -43,6 +45,7 @@ export function defaultState(): BoardState {
 export function cloneState(state: BoardState): BoardState {
 	return {
     teamToPlay: state.teamToPlay,
+		enPassantTargetSquare: state.enPassantTargetSquare,
     castling: {
       whiteKingSide: state.castling.whiteKingSide,
       whiteQueenSide: state.castling.whiteQueenSide,

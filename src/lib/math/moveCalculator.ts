@@ -62,6 +62,12 @@ export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, 
         const targetingPiece = board.getPieceAt(newX, newY);
         if (targetingPiece && targetingPiece.team !== team) {
             moves.push([newX, newY]);
+        } else if (!targetingPiece && board.state.enPassantTargetSquare) {
+            const enPassantX = board.state.enPassantTargetSquare.x;
+            const enPassantY = board.state.enPassantTargetSquare.y;
+            if (newX === enPassantX && newY === enPassantY) {
+                moves.push([newX, newY]);
+            }
         }
     }
     return moves;

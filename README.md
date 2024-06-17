@@ -11,7 +11,7 @@ Move calculating checklist:
 - [x] Rook slide
 - [x] Queen slide+cross
 - [x] King one-ranged slide+cross
-- [ ] En passant
+- [x] En passant
 - [x] Check coercion
 - [x] Check dodging
 - [x] Promotion (only for queen)

@@ -1,6 +1,7 @@
 <script lang="ts">
     // Generate the chessboard cells data
     import { BoardLogic, Highlighting, type Piece, Team } from '$lib';
+    import { translateSquare } from '$lib/util/notation.js';
 
     type Cell = {
         x: number,
@@ -10,12 +11,13 @@
 
     // const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
     // const fen = `1nq2b1r/rb6/1ppp1npp/p7/4P1PP/2NPk2B/PPP2p1N/RQ2K1R1 w Q - 0 25`;
-    const fen = `r1b2rk1/pp1n1ppp/2p2n2/q2pp1B1/1bPP4/2N1P3/PPQNBPPP/R3K2R w KQ - 0 10`
+    // const fen = `r1b2rk1/pp1n1ppp/2p2n2/q2pp1B1/1bPP4/2N1P3/PPQNBPPP/R3K2R w KQ - 0 10` // MAGNUS VS KASPAROV
+    const fen = `r3k2r/pbppqpb1/1pn3p1/7p/1N2pPn1/1PP4N/PB1P2PP/2QRKR2 b kq f3 0 1` // EN PASSANT
     let board = BoardLogic.fromFEN(fen);
     let cells: Cell[] = [];
     let selectedCell: Cell | null = null;
     $: teamToPlay = board.state.teamToPlay;
-    let availableMoves = board.getAllMovesForTeam(teamToPlay).length;
+    $: availableMoves = board.getAllMovesForTeam(teamToPlay).length;
     drawBoard(Team.White);
 
     function drawBoard(team: Team) {
@@ -142,6 +144,17 @@
         const teamName = piece.team == Team.White ? 'white' : 'black';
         return `/pieces/neo_${teamName}_${board.getPieceName(piece.type).toLowerCase()}.png`;
     }
+
+    function reset(fen: string) {
+        board = BoardLogic.fromFEN(fen);
+        updatePage();
+        clearHighlights();
+        selectedCell = null;
+    }
+
+    function starting() {
+        reset('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+    }
 </script>
 
 <main>
@@ -173,11 +186,15 @@
         <p>Available moves: {availableMoves}</p>
         <p>Is white in check? {board.isTeamInCheck(Team.White)}</p>
         <p>Is black in check? {board.isTeamInCheck(Team.Black)}</p>
+        <p>En passant target square: {board.state.enPassantTargetSquare ? translateSquare(board.state.enPassantTargetSquare) : 'none'}</p>
         <p>White queenside castle: {board.state.castling.whiteQueenSide}</p>
         <p>White kingside castle: {board.state.castling.whiteKingSide}</p>
         <p>Black queenside castle: {board.state.castling.blackQueenSide}</p>
         <p>Black kingside castle: {board.state.castling.blackKingSide}</p>
         <p>Game over? {availableMoves === 0 && board.isTeamInCheck(teamToPlay)}</p>
+
+        <button on:click={() => reset(fen)}>Reset</button>
+        <button on:click={starting}>Starting</button>
     </div>
 </main>
 

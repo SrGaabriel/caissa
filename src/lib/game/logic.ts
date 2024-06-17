@@ -8,6 +8,7 @@ import {
 } from '$lib/math/moveCalculator';
 import { isCoordinateInsideMatrix } from '$lib/util/matrix';
 import { cloneState, updateCastlingState } from '$lib/game/state';
+import { parseSquareName } from '$lib/util/notation';
 
 export enum PieceType {
     KING,
@@ -21,6 +22,11 @@ export enum PieceType {
 export enum Team {
     White,
     Black
+}
+
+export type Square = {
+    x: number,
+    y: number
 }
 
 export type Piece = {
@@ -152,6 +158,18 @@ export default class BoardLogic {
                     this.state.castling.blackKingSide = false;
                 }
             }
+            if (piece.type == PieceType.PAWN && futureY - currentY === 2) {
+                this.state.enPassantTargetSquare = {x: currentX, y: futureY - 1};
+            }
+            if (piece.type == PieceType.PAWN && futureX != currentX) {
+                const targetPiece = this.getPieceAt(futureX, futureY);
+                if (!targetPiece) {
+                    const enPassantTarget = this.getPieceAt(futureX, currentY);
+                    if (enPassantTarget && enPassantTarget.type == PieceType.PAWN && enPassantTarget.team !== piece.team) {
+                        this.board[currentY-1][futureX-1] = null;
+                    }
+                }
+            }
             this.state.teamToPlay = piece.team === Team.White ? Team.Black : Team.White;
         }
         this.board[currentY-1][currentX-1] = null;
@@ -250,8 +268,12 @@ export default class BoardLogic {
         }
         const turn = sectors[1] == 'b' ? Team.Black : Team.White;
         const castlingAvailability = sectors[2]
+        const enPassantTargetSquareNotation = sectors[3];
+        const enPassantTargetSquare = enPassantTargetSquareNotation === '-' ? undefined : parseSquareName(enPassantTargetSquareNotation);
+
         return new BoardLogic(board.reverse(), {
             teamToPlay: turn,
+            enPassantTargetSquare,
             castling: {
                 whiteKingSide: castlingAvailability.includes('K'),
                 whiteQueenSide: castlingAvailability.includes('Q'),
