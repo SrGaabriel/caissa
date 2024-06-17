@@ -6,6 +6,7 @@ import {
     calculateMovesForQueen,
     calculateMovesForRook
 } from '$lib/math/moveCalculator';
+import { isCoordinateInsideMatrix } from '$lib/util/matrix';
 
 export enum PieceType {
     KING,
@@ -41,22 +42,56 @@ export default class BoardLogic {
         return x > 0 && x < 9 && y > 0 && y < 9;
     }
 
+    getThreatenedSpaces(team: Team): number[][] {
+        let spaces: number[][] = [];
+        for (let y = 1; y <= 8; y++) {
+            for (let x = 1; x <= 8; x++) {
+                const piece = this.getPieceAt(x, y);
+                if (!piece || piece.team === team) continue;
+                const threats = this.hypotheticallyCalculateMovesFor(x, y, piece.type, piece.team, false);
+                spaces = spaces.concat(threats);
+            }
+        }
+        return spaces;
+    }
+
     calculateMovesFor(x: number, y: number): number[][] {
         const piece = this.getPieceAt(x,y);
         if (!piece) return [];
-        switch (piece.type) {
+        return this.hypotheticallyCalculateMovesFor(x,y,piece.type,piece.team, true);
+    }
+
+    isMovePossible(currentX: number, currentY: number, futureX: number, futureY: number) {
+        const pieceMoves = this.calculateMovesFor(currentX, currentY);
+        return isCoordinateInsideMatrix(pieceMoves, futureX, futureY);
+    }
+
+    tryToMovePiece(currentX: number, currentY: number, futureX: number, futureY: number): boolean {
+        console.log("Move!")
+        if (!this.isMovePossible(currentX, currentY, futureX, futureY)) return false;
+        const currentPiece = this.getPieceAt(currentX, currentY);
+        if (!currentPiece) return false;
+        // const futurePiece = this.getPieceAt(futureX, futureY);
+        this.board[currentY-1][currentX-1] = null;
+        this.board[futureY-1][futureX-1] = currentPiece;
+        console.log("Move successful!")
+        return true;
+    }
+
+    hypotheticallyCalculateMovesFor(x: number, y: number, type: PieceType, team: Team, smart: boolean): number[][] {
+        switch (type) {
             case PieceType.PAWN:
-                return calculateMovesForPawn(this, piece.team, x, y);
+                return calculateMovesForPawn(this, team, x, y);
             case PieceType.KNIGHT:
-                return calculateMovesForKnight(this, piece.team, x, y);
+                return calculateMovesForKnight(this, team, x, y);
             case PieceType.BISHOP:
-                return calculateMovesForBishop(this, piece.team, x, y);
+                return calculateMovesForBishop(this, team, x, y);
             case PieceType.ROOK:
-                return calculateMovesForRook(this, piece.team, x, y);
+                return calculateMovesForRook(this, team, x, y);
             case PieceType.QUEEN:
-                return calculateMovesForQueen(this, piece.team, x, y);
+                return calculateMovesForQueen(this, team, x, y);
             case PieceType.KING:
-                return calculateMovesForKing(this, piece.team, x, y);
+                return calculateMovesForKing(this, team, x, y, smart);
             default:
                 return []
         }

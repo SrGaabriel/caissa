@@ -10,6 +10,6 @@ Move calculating checklist:
 - [x] King one-ranged slide+cross
 - [ ] En passant
 - [ ] Check coercion
-- [ ] King check dodge
+- [x] King check dodge
 - [ ] Promotion
 - [ ] Castling

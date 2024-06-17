@@ -1,4 +1,5 @@
 import BoardLogic, { Team } from '../logic/board.js';
+import { isCoordinateInsideMatrix } from '$lib/util/matrix';
 
 const KNIGHT_DIRECTIONS = [
     [-1, 2],
@@ -91,13 +92,18 @@ export function calculateMovesForKnight(board: BoardLogic, team: Team, x: number
     return moves;
 }
 
-export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, y: number): number[][] {
+export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, y: number, smart: boolean): number[][] {
     const moves = []
+    const threatenedSpaces = smart ? board.getThreatenedSpaces(team) : [];
     for (const direction of KING_QUEEN_DIRECTIONS) {
         const [dx, dy] = direction;
         const newX = x + dx;
         const newY = y + dy;
         if (!board.isPositionValid(newX, newY)) {
+            continue;
+        }
+        if (smart && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) { // Values have to be inverted
+            console.log(newX, newY, "is inside!")
             continue;
         }
 
