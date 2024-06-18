@@ -164,6 +164,8 @@ export default class BoardLogic {
             }
             if (piece.type == PieceType.PAWN && Math.abs(futureY - currentY) === 2) {
                 this.state.enPassantTargetSquare = {x: currentX, y: futureY - this.getYOrientation(piece.team)};
+            } else {
+                this.state.enPassantTargetSquare = undefined;
             }
             if (piece.type == PieceType.PAWN && futureX != currentX) {
                 const targetPiece = this.getPieceAt(futureX, futureY);

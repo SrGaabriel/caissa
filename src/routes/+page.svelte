@@ -110,8 +110,9 @@
             return;
         }
         // If the player is trying to select a piece...
-        if (!piece) return;
-        if (piece.team === teamToPlay) {
+        if (!piece) {
+            clearHighlights(true);
+        } else if (piece.team === teamToPlay) {
             selectPiece(cell);
             highlightPossibleMoves(x, y);
         } else {
@@ -156,6 +157,7 @@
     }
 
     function handleMouseDown(event: MouseEvent) {
+        if (event.button === 2) return;
         const element = event.target as HTMLElement;
         if (!element.dataset.xpos || !element.dataset.ypos) {
             console.error(`Element inside cell not identified: ${element.nodeName}`);
@@ -226,6 +228,20 @@
         resetPieceMovement(chessboard, true);
     }
 
+    function handleContextMenu(event: Event) {
+        event.preventDefault();
+        const element = event.target as HTMLElement;
+        if (!element.dataset.xpos || !element.dataset.ypos) {
+            console.error(`Element inside cell not identified: ${element.nodeName}`);
+            return;
+        }
+        const x: number = +element.dataset.xpos;
+        const y: number = +element.dataset.ypos;
+        const cell = findCell(x,y);
+        if (!cell) return;
+        markCell(cell, Highlighting.THREATENED, true);
+    }
+
     function resetPieceMovement(chessboard: HTMLElement, clearAllHighlights: boolean) {
         if (!draggingCell) return;
         if (clearAllHighlights) {
@@ -288,9 +304,10 @@
 
 <main>
     <div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
-        {#each cells as cell}
+        {#each cells as cell (cell.x + '-' + cell.y)}
             <div
                 id={`cell-${cell.x}-${cell.y}`}
+                key={`cell-${cell.x}-${cell.y}`}
                 data-xpos={cell.x}
                 data-ypos={cell.y}
                 data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
@@ -298,6 +315,7 @@
                 draggable="false"
                 on:click={handleSquareClick}
                 on:mousedown={handleMouseDown}
+                on:contextmenu={handleContextMenu}
                 class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
             >
                 {#if board.getPieceAt(cell.x,cell.y) != null}
@@ -308,6 +326,7 @@
                       data-ypos={cell.y}
                       class="pieceAsset"
                       draggable="false"
+                      unselectable="on"
                       height=96
                     />
                 {/if}
@@ -383,7 +402,8 @@
     }
 
     .cell[data-highlighting="considering"] {
-        filter: brightness(50%);
+        filter: brightness(95%);
+        border: 4px solid white;
     }
 
     .possibleCapture {
@@ -404,6 +424,12 @@
         background-color: black;
         border-radius: 100%;
         opacity: 0.15;
+    }
+
+    .pieceAsset {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
     }
 
     .cell.black {
