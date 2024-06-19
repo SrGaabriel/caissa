@@ -18,7 +18,7 @@
 
     // const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
     // const fen = `1nq2b1r/rb6/1ppp1npp/p7/4P1PP/2NPk2B/PPP2p1N/RQ2K1R1 w Q - 0 25`;
-    const fen = `r1b2rk1/pp1n1ppp/2p2n2/q2pp1B1/1bPP4/2N1P3/PPQNBPPP/R3K2R w KQ - 0 10` // MAGNUS VS KASPAROV
+    const fen = `8/1p1p1P2/1P1P4/6p1/8/pp2P1p1/krp3P1/bbK5 w - - 0 4` // MAGNUS VS KASPAROV
     // const fen = `r3k2r/pbppqpb1/1pn3p1/7p/1N2pPn1/1PP4N/PB1P2PP/2QRKR2 b kq f3 0 1` // EN PASSANT
     let board = BoardLogic.fromFEN(fen);
     let cells: Cell[] = [];

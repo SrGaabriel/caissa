@@ -55,6 +55,7 @@ export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, 
         const [dx, dy] = takingDirection;
         const newX = x + dx;
         const newY = y + dy;
+        if (!board.isPositionValid(newX, newY)) continue;
         const targetingPiece = board.getPieceAt(newX, newY);
         if (targetingPiece && targetingPiece.team !== team) {
             moves.push([newX, newY]);

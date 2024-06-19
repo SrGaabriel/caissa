@@ -148,7 +148,7 @@ export default class BoardLogic {
             promotion: false
         };
 
-        if (piece.type == PieceType.PAWN && futureY == this.getBoardYEndForTeam(piece.team)) {
+        if (legally && piece.type == PieceType.PAWN && futureY == this.getBoardYEndForTeam(piece.team)) {
             piece.type = PieceType.QUEEN;
             move = { ...move, promotion: true }
         }
