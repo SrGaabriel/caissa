@@ -239,7 +239,12 @@
         const y: number = +element.dataset.ypos;
         const cell = findCell(x,y);
         if (!cell) return;
-        markCell(cell, Highlighting.THREATENED, true);
+        if (cell.highlighting === Highlighting.THREATENED) {
+            cell.highlighting = null;
+            cells = cells;
+        } else {
+            markCell(cell, Highlighting.THREATENED, true);
+        }
     }
 
     function resetPieceMovement(chessboard: HTMLElement, clearAllHighlights: boolean) {
@@ -303,55 +308,57 @@
 </script>
 
 <main>
-    <div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
-        {#each cells as cell (cell.x + '-' + cell.y)}
-            <div
-                id={`cell-${cell.x}-${cell.y}`}
-                key={`cell-${cell.x}-${cell.y}`}
-                data-xpos={cell.x}
-                data-ypos={cell.y}
-                data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
-                data-highlighting={cell.highlighting}
-                draggable="false"
-                on:click={handleSquareClick}
-                on:mousedown={handleMouseDown}
-                on:contextmenu={handleContextMenu}
-                class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
-            >
-                {#if board.getPieceAt(cell.x,cell.y) != null}
-                    <img
-                      id={`asset-${cell.x}-${cell.y}`}
-                      src={`${getPieceAsset(board.getPieceAt(cell.x,cell.y))}`}
-                      data-xpos={cell.x}
-                      data-ypos={cell.y}
-                      class="pieceAsset"
-                      draggable="false"
-                      unselectable="on"
-                      height=96
-                    />
-                {/if}
-                {#if cell.highlighting === Highlighting.POSSIBLE_MOVE && board.getPieceAt(cell.x,cell.y)}
-                    <span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture" draggable="false"></span>
-                {:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
-                    <span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace" draggable="false"></span>
-                {/if}
-            </div>
-        {/each}
-    </div>
-    <div id="sidebar">
-        <p>Turn: {teamToPlay === 0 ? 'White' : 'Black'}</p>
-        <p>Available moves: {availableMoves}</p>
-        <p>Is white in check? {board.isTeamInCheck(Team.White)}</p>
-        <p>Is black in check? {board.isTeamInCheck(Team.Black)}</p>
-        <p>En passant target square: {board.state.enPassantTargetSquare ? translateSquare(board.state.enPassantTargetSquare) : 'none'}</p>
-        <p>White queenside castle: {board.state.castling.whiteQueenSide}</p>
-        <p>White kingside castle: {board.state.castling.whiteKingSide}</p>
-        <p>Black queenside castle: {board.state.castling.blackQueenSide}</p>
-        <p>Black kingside castle: {board.state.castling.blackKingSide}</p>
-        <p>Game over? {availableMoves === 0 && board.isTeamInCheck(teamToPlay)}</p>
+    <div id="container">
+        <div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
+            {#each cells as cell (cell.x + '-' + cell.y)}
+                <div
+                    id={`cell-${cell.x}-${cell.y}`}
+                    key={`cell-${cell.x}-${cell.y}`}
+                    data-xpos={cell.x}
+                    data-ypos={cell.y}
+                    data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
+                    data-highlighting={cell.highlighting}
+                    draggable="false"
+                    on:click={handleSquareClick}
+                    on:mousedown={handleMouseDown}
+                    on:contextmenu={handleContextMenu}
+                    class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
+                >
+                    {#if board.getPieceAt(cell.x,cell.y) != null}
+                        <img
+                          id={`asset-${cell.x}-${cell.y}`}
+                          src={`${getPieceAsset(board.getPieceAt(cell.x,cell.y))}`}
+                          data-xpos={cell.x}
+                          data-ypos={cell.y}
+                          class="pieceAsset"
+                          draggable="false"
+                          unselectable="on"
+                          height=96
+                        />
+                    {/if}
+                    {#if cell.highlighting === Highlighting.POSSIBLE_MOVE && board.getPieceAt(cell.x,cell.y)}
+                        <span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture" draggable="false"></span>
+                    {:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
+                        <span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace" draggable="false"></span>
+                    {/if}
+                </div>
+            {/each}
+        </div>
+        <div id="sidebar">
+            <p>Turn: {teamToPlay === 0 ? 'White' : 'Black'}</p>
+            <p>Available moves: {availableMoves}</p>
+            <p>Is white in check? {board.isTeamInCheck(Team.White)}</p>
+            <p>Is black in check? {board.isTeamInCheck(Team.Black)}</p>
+            <p>En passant target square: {board.state.enPassantTargetSquare ? translateSquare(board.state.enPassantTargetSquare) : 'none'}</p>
+            <p>White queenside castle: {board.state.castling.whiteQueenSide}</p>
+            <p>White kingside castle: {board.state.castling.whiteKingSide}</p>
+            <p>Black queenside castle: {board.state.castling.blackQueenSide}</p>
+            <p>Black kingside castle: {board.state.castling.blackKingSide}</p>
+            <p>Game over? {availableMoves === 0 && board.isTeamInCheck(teamToPlay)}</p>
 
-        <button on:click={() => reset(fen)}>Reset</button>
-        <button on:click={starting}>Starting</button>
+            <button on:click={() => reset(fen)}>Reset</button>
+            <button on:click={starting}>Starting</button>
+        </div>
     </div>
 </main>
 
@@ -361,8 +368,19 @@
         justify-content: center;
         align-items: center;
         margin: 0;
-        height: 98vh;
-        width: 99vw;
+        padding: 0;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+        background-color: #bed2d0;
+    }
+
+    #container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 16px;
+        box-shadow: 3px 8px 30px black;
     }
 
     #sidebar {
@@ -372,6 +390,8 @@
         color: azure;
         font-weight: 600;
         font-family: sans-serif;
+        border-top-right-radius: 16px;
+        border-bottom-right-radius: 16px;
     }
 
     #chessboard {
@@ -380,6 +400,14 @@
         grid-template-columns: repeat(8, 100px);
         grid-template-rows: repeat(8, 100px);
         gap: 0;
+    }
+
+    .cell:first-child {
+        border-top-left-radius: 16px;
+    }
+
+    .cell:nth-child(57) {
+        border-bottom-left-radius: 16px;
     }
 
     .cell {
@@ -393,9 +421,14 @@
         cursor: pointer;
     }
 
-    .cell[data-highlighting="threatened"] {
-        background-color: indianred !important;;
+    .cell[data-highlighting="threatened"].white {
+        background-color: #de8181 !important;;
     }
+
+    .cell[data-highlighting="threatened"].black {
+        background-color: #df4f4f !important;;
+    }
+
 
     .cell[data-highlighting="selected"] {
         background-color: #d9d984 !important;;
@@ -433,10 +466,10 @@
     }
 
     .cell.black {
-        background-color: #565c96;
+        background-color: #aa6e30;
     }
 
     .cell.white {
-        background-color: #c4c3c3;
+        background-color: #ebd9af;
     }
 </style>
