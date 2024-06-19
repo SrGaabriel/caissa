@@ -1,7 +1,9 @@
 <script lang="ts">
     // Generate the chessboard cells data
     import { BoardLogic, Highlighting, type Piece, Team } from '$lib';
-    import { translateSquare } from '$lib/util/notation.js';
+    import { flip } from 'svelte/animate'
+    import { getMoveSound } from '$lib/sound/sounds';
+    import { getOppositeTeam } from '$lib/game/logic';
 
     type Cell = {
         x: number,
@@ -25,7 +27,7 @@
     let dragTimeout: number | null = null;
     const isScreenMirrored: boolean = false;
     $: teamToPlay = board.state.teamToPlay;
-    $: availableMoves = board.getAllMovesForTeam(teamToPlay).length;
+    $: checkmate = false;
     drawBoard(Team.White);
 
     function drawBoard(team: Team) {
@@ -66,7 +68,7 @@
 
     function updatePage() {
         board = board;
-        availableMoves = board.getAllMovesForTeam(teamToPlay).length;
+        clearHighlights(true);
     }
 
     function handleSquareClick(event: Event) {
@@ -101,9 +103,8 @@
                 cells = cells;
                 return;
             } // Otherwise, we move
-            const move = board.playMove(selectedCell.x, selectedCell.y, x, y);
+            const move = playMove(selectedCell.x, selectedCell.y, x, y);
             if (move) {
-                console.log(move);
                 updatePage();
                 selectedCell = null;
                 clearHighlights();
@@ -179,7 +180,6 @@
         highlightPossibleMoves(x,y);
         if (!cellElement || !element) return;
         dragTimeout = setTimeout(() => {
-            console.log("Done")
             cellElement.removeChild(asset);
             chessboard.appendChild(asset);
             draggingCell = findCell(x, y)!;
@@ -217,7 +217,7 @@
             resetPieceMovement(chessboard, false);
             return;
         }
-        const move = board.playMove(draggingCell.x, draggingCell.y, cellUnderCursor.x, cellUnderCursor.y);
+        const move = playMove(draggingCell.x, draggingCell.y, cellUnderCursor.x, cellUnderCursor.y);
         if (!move) {
             clearHighlights(false);
             selectPiece(draggingCell);
@@ -227,6 +227,17 @@
         }
         updatePage();
         resetPieceMovement(chessboard, true);
+    }
+
+    function playMove(currentX: number, currentY: number, futureX: number, futureY: number): boolean {
+        const move = board.playMove(currentX, currentY, futureX, futureY);
+        if (!move) return false;
+        checkmate = move.checkmate;
+        const sound = getMoveSound(move);
+        console.log(sound);
+        const audio = new Audio(`sounds/${getMoveSound(move)}.mp3`);
+        audio.play();
+        return true;
     }
 
     function handleContextMenu(event: Event) {
@@ -319,6 +330,7 @@
                     data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
                     data-highlighting={cell.highlighting}
                     draggable="false"
+                    animate:flip
                     on:click={handleSquareClick}
                     on:mousedown={handleMouseDown}
                     on:contextmenu={handleContextMenu}
@@ -346,8 +358,8 @@
         </div>
         <div id="sidebar">
             <div class="sidebar-overheader">
-                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
-                <span class="team-to-play">{teamToPlay === Team.Black ? 'Black' : 'White'} to play!</span>
+                <div class="turn-color-palette" style={`--turn-color: ${(checkmate ? getOppositeTeam(teamToPlay) : teamToPlay) === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
+                <span class="team-to-play">{checkmate ? `Checkmate! ${getOppositeTeam(teamToPlay)}!` : `${teamToPlay} to play!`}</span>
             </div>
         </div>
     </div>

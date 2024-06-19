@@ -112,7 +112,6 @@ export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, 
             }
         }
         if (!threatsOnly && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) {
-            console.log("King threatened at ", newX, newY)
             continue;
         }
 
@@ -130,7 +129,6 @@ export function hasCastlingSpace(board: BoardLogic, x: number, y: number, side: 
     for (let i = x+orientation; i != rook; i += orientation) {
         const piece = board.getPieceAt(i, y);
         if (piece) {
-            console.log(`While analyzing ${side === Side.QUEENSIDE ? 'QUEENSIDE' : 'KINGSIDE'} castling, ${i} got in the way`)
             return false;
         }
     }

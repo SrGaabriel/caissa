@@ -21,8 +21,12 @@ export enum PieceType {
 }
 
 export enum Team {
-    White,
-    Black
+    White = "White",
+    Black = "Black"
+}
+
+export function getOppositeTeam(team: Team): Team {
+    return team === Team.White? Team.Black : Team.White;
 }
 
 export type Square = {
@@ -77,9 +81,6 @@ export default class BoardLogic {
                 const piece = this.getPieceAt(x, y);
                 if (!piece || piece.team === team) continue;
                 const threats = this.optimisticallyCalculatePieceMoves(x, y, piece.type, piece.team, true);
-                if (isCoordinateInsideMatrix(threats, 8, 7) || isCoordinateInsideMatrix(threats, 8, 5)) {
-                    console.log(piece.type, x, y, "viado", (isCoordinateInsideMatrix(threats, 8, 7) ? '8,7' : '8,5'));
-                }
                 spaces = spaces.concat(threats);
             }
         }
@@ -133,7 +134,7 @@ export default class BoardLogic {
         return isCoordinateInsideMatrix(pieceMoves, futureX, futureY);
     }
 
-    playMove(currentX: number, currentY: number, futureX: number, futureY: number, legally: boolean = true): Move | null {
+    playMove(currentX: number, currentY: number, futureX: number, futureY: number, legally: boolean = true, allowCheckmate: boolean = true): Move | null {
         if (legally && !this.isMovePossible(currentX, currentY, futureX, futureY)) return null;
         const piece = this.getPieceAt(currentX, currentY);
         if (!piece) return null;
@@ -188,9 +189,12 @@ export default class BoardLogic {
                 }
             }
         }
-        this.state.teamToPlay = piece.team === Team.White ? Team.Black : Team.White;
+        this.state.teamToPlay = getOppositeTeam(piece.team);
         this.board[currentY - 1][currentX - 1] = null;
         this.board[futureY - 1][futureX - 1] = piece;
+        const check = this.isTeamInCheck(this.state.teamToPlay)
+        const checkmate = allowCheckmate ? check && this.getAllMovesForTeam(this.state.teamToPlay).length === 0 : false;
+        move = { ...move, check, checkmate};
         return move;
     }
 
@@ -205,7 +209,7 @@ export default class BoardLogic {
         const moves = []
         for (const move of optimisticMoves) {
             const hypotheticalBoard = this.clone();
-            hypotheticalBoard.playMove(x, y, move[0], move[1], false);
+            hypotheticalBoard.playMove(x, y, move[0], move[1], false, false);
             if (!hypotheticalBoard.isTeamInCheck(team)) {
                 moves.push(move);
             }
