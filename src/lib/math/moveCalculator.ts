@@ -36,10 +36,10 @@ const KING_QUEEN_DIRECTIONS = [
     [0, -1]
 ];
 
-export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, y: number): number[][] {
+export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, y: number, threatsOnly: boolean): number[][] {
     const moves = [];
     const yDirection = board.getYOrientation(team);
-    if (canPawnMarch(board, x, y, yDirection)) {
+    if (!threatsOnly && canPawnMarch(board, x, y, yDirection)) {
         moves.push([x, y + yDirection]);
         if ((team === Team.White && y === 2) || (team === Team.Black && y === 7)) {
             if (canPawnMarch(board, x, y, 2 * yDirection)) {
@@ -93,9 +93,9 @@ export function calculateMovesForKnight(board: BoardLogic, team: Team, x: number
     return moves;
 }
 
-export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, y: number, smart: boolean): number[][] {
+export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, y: number, threatsOnly: boolean): number[][] {
     const moves = []
-    const threatenedSpaces = smart ? board.getThreatenedSpaces(team) : [];
+    const threatenedSpaces = threatsOnly ? [] : board.getThreatenedSpaces(team);
     for (const direction of KING_QUEEN_DIRECTIONS) {
         const [dx, dy] = direction;
         const newX = x + dx;
@@ -111,7 +111,8 @@ export function calculateMovesForKing(board: BoardLogic, team: Team, x: number, 
                 moves.push([x + 2, y]);
             }
         }
-        if (smart && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) {
+        if (!threatsOnly && isCoordinateInsideMatrix(threatenedSpaces, newX, newY)) {
+            console.log("King threatened at ", newX, newY)
             continue;
         }
 

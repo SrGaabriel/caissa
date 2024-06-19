@@ -9,6 +9,7 @@ import {
 import { isCoordinateInsideMatrix } from '$lib/util/matrix';
 import { cloneState, updateCastlingState } from '$lib/game/state';
 import { parseSquareName } from '$lib/util/notation';
+import type { Move } from '$lib/game/move';
 
 export enum PieceType {
     KING,
@@ -62,7 +63,7 @@ export default class BoardLogic {
             for (let x = 1; x <= 8; x++) {
                 const piece = this.getPieceAt(x, y);
                 if (!piece || piece.team !== team) continue;
-                const pieceMoves = this.hypotheticallyCalculateMovesFor(x,y,piece.type,piece.team, true);
+                const pieceMoves = this.hypotheticallyCalculateMovesFor(x,y,piece.type,piece.team);
                 moves = moves.concat(pieceMoves);
             }
         }
@@ -75,7 +76,10 @@ export default class BoardLogic {
             for (let x = 1; x <= 8; x++) {
                 const piece = this.getPieceAt(x, y);
                 if (!piece || piece.team === team) continue;
-                const threats = this.optimisticallyCalculatePieceMoves(x, y, piece.type, piece.team, false);
+                const threats = this.optimisticallyCalculatePieceMoves(x, y, piece.type, piece.team, true);
+                if (isCoordinateInsideMatrix(threats, 8, 7) || isCoordinateInsideMatrix(threats, 8, 5)) {
+                    console.log(piece.type, x, y, "viado", (isCoordinateInsideMatrix(threats, 8, 7) ? '8,7' : '8,5'));
+                }
                 spaces = spaces.concat(threats);
             }
         }
@@ -121,7 +125,7 @@ export default class BoardLogic {
     calculateMovesFor(x: number, y: number): number[][] {
         const piece = this.getPieceAt(x,y);
         if (!piece) return [];
-        return this.hypotheticallyCalculateMovesFor(x,y,piece.type,piece.team, true);
+        return this.hypotheticallyCalculateMovesFor(x,y,piece.type,piece.team);
     }
 
     isMovePossible(currentX: number, currentY: number, futureX: number, futureY: number) {
@@ -129,65 +133,79 @@ export default class BoardLogic {
         return isCoordinateInsideMatrix(pieceMoves, futureX, futureY);
     }
 
-    tryToMovePiece(currentX: number, currentY: number, futureX: number, futureY: number): boolean {
-        if (!this.isMovePossible(currentX, currentY, futureX, futureY)) return false;
-        this.movePiece(currentX, currentY, futureX, futureY, true);
-        return true;
+    playMove(currentX: number, currentY: number, futureX: number, futureY: number, legally: boolean = true): Move | null {
+        if (legally && !this.isMovePossible(currentX, currentY, futureX, futureY)) return null;
+        const piece = this.getPieceAt(currentX, currentY);
+        if (!piece) return null;
+        let move: Move = {
+            piece,
+            check: false,
+            capture: this.getPieceAt(futureX, futureY) != null,
+            castle: false,
+            checkmate: false,
+            enPassant: false,
+            promotion: false
+        };
+
+        if (piece.type == PieceType.PAWN && futureY == this.getBoardYEndForTeam(piece.team)) {
+            piece.type = PieceType.QUEEN;
+            move = { ...move, promotion: true }
+        }
+        if (piece.type == PieceType.ROOK && currentY == this.getBoardYStartForTeam(piece.team)) {
+            if (currentX == 1 || currentX == 8) {
+                const side = this.getSide(currentX);
+                updateCastlingState(this.state, piece.team, side, false);
+            }
+        }
+        if (piece.type == PieceType.KING) {
+            if (Math.abs(futureX - currentX) === 2) {
+                const rookX = futureX - currentX === 2 ? 8 : 1;
+                const rookFutureX = futureX - currentX === 2 ? 6 : 4;
+                this.movePiece(rookX, currentY, rookFutureX, currentY);
+                move = { ...move, castle: true }
+            }
+            if (piece.team == Team.White) {
+                this.state.castling.whiteQueenSide = false;
+                this.state.castling.whiteKingSide = false;
+            } else {
+                this.state.castling.blackQueenSide = false;
+                this.state.castling.blackKingSide = false;
+            }
+        }
+        if (piece.type == PieceType.PAWN && Math.abs(futureY - currentY) === 2) {
+            this.state.enPassantTargetSquare = { x: currentX, y: futureY - this.getYOrientation(piece.team) };
+            move = { ...move, enPassant: true }
+        } else {
+            this.state.enPassantTargetSquare = undefined;
+        }
+        if (piece.type == PieceType.PAWN && futureX != currentX) {
+            const targetPiece = this.getPieceAt(futureX, futureY);
+            if (!targetPiece) {
+                const enPassantTarget = this.getPieceAt(futureX, currentY);
+                if (enPassantTarget && enPassantTarget.type == PieceType.PAWN && enPassantTarget.team !== piece.team) {
+                    this.board[currentY - 1][futureX - 1] = null;
+                    move = { ...move, capture: true, enPassant: true }
+                }
+            }
+        }
+        this.state.teamToPlay = piece.team === Team.White ? Team.Black : Team.White;
+        this.board[currentY - 1][currentX - 1] = null;
+        this.board[futureY - 1][futureX - 1] = piece;
+        return move;
     }
 
-    movePiece(currentX: number, currentY: number, futureX: number, futureY: number, updateState: boolean) {
+    movePiece(currentX: number, currentY: number, futureX: number, futureY: number) {
         const piece = this.getPieceAt(currentX, currentY);
-        if (!piece) return false;
-        if (updateState) {
-            if (piece.type == PieceType.PAWN && futureY == this.getBoardYEndForTeam(piece.team)) {
-                piece.type = PieceType.QUEEN;
-            }
-            if (piece.type == PieceType.ROOK && currentY == this.getBoardYStartForTeam(piece.team)) {
-                if (currentX == 1 || currentX == 8) {
-                    const side = this.getSide(currentX);
-                    updateCastlingState(this.state, piece.team, side, false);
-                }
-            }
-            if (piece.type == PieceType.KING) {
-                if (Math.abs(futureX - currentX) === 2) {
-                    const rookX = futureX - currentX === 2 ? 8 : 1;
-                    const rookFutureX = futureX - currentX === 2 ? 6 : 4;
-                    this.movePiece(rookX, currentY, rookFutureX, currentY, false);
-                }
-                if (piece.team == Team.White) {
-                    this.state.castling.whiteQueenSide = false;
-                    this.state.castling.whiteKingSide = false;
-                } else {
-                    this.state.castling.blackQueenSide = false;
-                    this.state.castling.blackKingSide = false;
-                }
-            }
-            if (piece.type == PieceType.PAWN && Math.abs(futureY - currentY) === 2) {
-                this.state.enPassantTargetSquare = {x: currentX, y: futureY - this.getYOrientation(piece.team)};
-            } else {
-                this.state.enPassantTargetSquare = undefined;
-            }
-            if (piece.type == PieceType.PAWN && futureX != currentX) {
-                const targetPiece = this.getPieceAt(futureX, futureY);
-                if (!targetPiece) {
-                    const enPassantTarget = this.getPieceAt(futureX, currentY);
-                    if (enPassantTarget && enPassantTarget.type == PieceType.PAWN && enPassantTarget.team !== piece.team) {
-                        this.board[currentY-1][futureX-1] = null;
-                    }
-                }
-            }
-            this.state.teamToPlay = piece.team === Team.White ? Team.Black : Team.White;
-        }
         this.board[currentY-1][currentX-1] = null;
         this.board[futureY-1][futureX-1] = piece;
     }
 
-    hypotheticallyCalculateMovesFor(x: number, y: number, type: PieceType, team: Team, smart: boolean): number[][] {
-        const optimisticMoves = this.optimisticallyCalculatePieceMoves(x,y,type,team,smart);
+    hypotheticallyCalculateMovesFor(x: number, y: number, type: PieceType, team: Team, threatsOnly: boolean = false): number[][] {
+        const optimisticMoves = this.optimisticallyCalculatePieceMoves(x,y,type,team, threatsOnly);
         const moves = []
         for (const move of optimisticMoves) {
             const hypotheticalBoard = this.clone();
-            hypotheticalBoard.movePiece(x, y, move[0], move[1], false);
+            hypotheticalBoard.playMove(x, y, move[0], move[1], false);
             if (!hypotheticalBoard.isTeamInCheck(team)) {
                 moves.push(move);
             }
@@ -195,10 +213,10 @@ export default class BoardLogic {
         return moves;
     }
 
-    optimisticallyCalculatePieceMoves(x: number, y: number, type: PieceType, team: Team, smart: boolean): number[][] {
+    optimisticallyCalculatePieceMoves(x: number, y: number, type: PieceType, team: Team, threatsOnly: boolean = false): number[][] {
         switch (type) {
             case PieceType.PAWN:
-                return calculateMovesForPawn(this, team, x, y);
+                return calculateMovesForPawn(this, team, x, y, threatsOnly);
             case PieceType.KNIGHT:
                 return calculateMovesForKnight(this, team, x, y);
             case PieceType.BISHOP:
@@ -208,7 +226,7 @@ export default class BoardLogic {
             case PieceType.QUEEN:
                 return calculateMovesForQueen(this, team, x, y);
             case PieceType.KING:
-                return calculateMovesForKing(this, team, x, y, smart);
+                return calculateMovesForKing(this, team, x, y, threatsOnly);
             default:
                 return []
         }

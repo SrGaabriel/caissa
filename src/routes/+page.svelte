@@ -101,8 +101,9 @@
                 cells = cells;
                 return;
             } // Otherwise, we move
-            const move = board.tryToMovePiece(selectedCell.x, selectedCell.y, x, y);
+            const move = board.playMove(selectedCell.x, selectedCell.y, x, y);
             if (move) {
+                console.log(move);
                 updatePage();
                 selectedCell = null;
                 clearHighlights();
@@ -216,7 +217,7 @@
             resetPieceMovement(chessboard, false);
             return;
         }
-        const move = board.tryToMovePiece(draggingCell.x, draggingCell.y, cellUnderCursor.x, cellUnderCursor.y);
+        const move = board.playMove(draggingCell.x, draggingCell.y, cellUnderCursor.x, cellUnderCursor.y);
         if (!move) {
             clearHighlights(false);
             selectPiece(draggingCell);
@@ -313,7 +314,6 @@
             {#each cells as cell (cell.x + '-' + cell.y)}
                 <div
                     id={`cell-${cell.x}-${cell.y}`}
-                    key={`cell-${cell.x}-${cell.y}`}
                     data-xpos={cell.x}
                     data-ypos={cell.y}
                     data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
@@ -345,19 +345,10 @@
             {/each}
         </div>
         <div id="sidebar">
-            <p>Turn: {teamToPlay === 0 ? 'White' : 'Black'}</p>
-            <p>Available moves: {availableMoves}</p>
-            <p>Is white in check? {board.isTeamInCheck(Team.White)}</p>
-            <p>Is black in check? {board.isTeamInCheck(Team.Black)}</p>
-            <p>En passant target square: {board.state.enPassantTargetSquare ? translateSquare(board.state.enPassantTargetSquare) : 'none'}</p>
-            <p>White queenside castle: {board.state.castling.whiteQueenSide}</p>
-            <p>White kingside castle: {board.state.castling.whiteKingSide}</p>
-            <p>Black queenside castle: {board.state.castling.blackQueenSide}</p>
-            <p>Black kingside castle: {board.state.castling.blackKingSide}</p>
-            <p>Game over? {availableMoves === 0 && board.isTeamInCheck(teamToPlay)}</p>
-
-            <button on:click={() => reset(fen)}>Reset</button>
-            <button on:click={starting}>Starting</button>
+            <div class="sidebar-overheader">
+                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
+                <span class="team-to-play">{teamToPlay === Team.Black ? 'Black' : 'White'} to play!</span>
+            </div>
         </div>
     </div>
 </main>
@@ -373,6 +364,7 @@
         height: 100vh;
         width: 100vw;
         background-color: #bed2d0;
+        user-select: none;
     }
 
     #container {
@@ -392,6 +384,35 @@
         font-family: sans-serif;
         border-top-right-radius: 16px;
         border-bottom-right-radius: 16px;
+    }
+
+    .sidebar-overheader {
+        display: flex;
+        align-items: center;
+        border-top-right-radius: 16px;
+        width: 100%;
+        height: 100px;
+        background-color: #2a2929;
+        border-bottom: 1px solid dimgray;
+    }
+
+    .turn-color-palette {
+        width: 48px;
+        aspect-ratio: 1/1;
+        background-color: var(--turn-color);
+        margin-left: 24px;
+        border: 3px solid gray;
+        border-radius: 100%;
+    }
+
+    .team-to-play {
+        user-select: none;
+        font-size: 26px;
+        margin-left: 16px;
+        margin-top: 2px;
+        font-family: "Archivo Black", sans-serif;
+        font-weight: 400;
+        font-style: normal;
     }
 
     #chessboard {
