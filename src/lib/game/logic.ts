@@ -44,6 +44,11 @@ export enum Side {
     QUEENSIDE
 }
 
+export enum GameEnding {
+    CHECKMATE = "Checkmate",
+    STALEMATE = "Stalemate"
+}
+
 export default class BoardLogic {
     board: (Piece | null)[][];
     state: BoardState
@@ -123,6 +128,19 @@ export default class BoardLogic {
         });
     }
 
+    // TODO: improve this mess
+    getGameEnding(check: boolean | undefined = undefined): GameEnding | null {
+        const opponent = getOppositeTeam(this.state.teamToPlay);
+        const possibleMoves = this.getAllMovesForTeam(opponent).length;
+        if (possibleMoves !== 0) return null;
+        if (check === true || check === false && this.isTeamInCheck(opponent)) return GameEnding.CHECKMATE;
+        else return GameEnding.STALEMATE
+    }
+
+    checkEnding() {
+        this.state.ending = this.getGameEnding();
+    }
+
     calculateMovesFor(x: number, y: number): number[][] {
         const piece = this.getPieceAt(x,y);
         if (!piece) return [];
@@ -134,7 +152,7 @@ export default class BoardLogic {
         return isCoordinateInsideMatrix(pieceMoves, futureX, futureY);
     }
 
-    playMove(currentX: number, currentY: number, futureX: number, futureY: number, legally: boolean = true, allowCheckmate: boolean = true): Move | null {
+    playMove(currentX: number, currentY: number, futureX: number, futureY: number, legally: boolean = true, allowEnd: boolean = true): Move | null {
         if (legally && !this.isMovePossible(currentX, currentY, futureX, futureY)) return null;
         const piece = this.getPieceAt(currentX, currentY);
         if (!piece) return null;
@@ -143,7 +161,7 @@ export default class BoardLogic {
             check: false,
             capture: this.getPieceAt(futureX, futureY) != null,
             castle: false,
-            checkmate: false,
+            ending: null,
             enPassant: false,
             promotion: false
         };
@@ -189,12 +207,21 @@ export default class BoardLogic {
                 }
             }
         }
-        this.state.teamToPlay = getOppositeTeam(piece.team);
         this.board[currentY - 1][currentX - 1] = null;
         this.board[futureY - 1][futureX - 1] = piece;
-        const check = this.isTeamInCheck(this.state.teamToPlay)
-        const checkmate = allowCheckmate ? check && this.getAllMovesForTeam(this.state.teamToPlay).length === 0 : false;
-        move = { ...move, check, checkmate};
+        const check = this.isTeamInCheck(getOppositeTeam(piece.team));
+        move = { ...move, check };
+        if (allowEnd) {
+            const ending = this.getGameEnding(check);
+            if (ending) {
+                move = { ...move, ending }
+                this.state.ending = ending;
+            } else {
+                this.state.teamToPlay = getOppositeTeam(piece.team);
+            }
+        } else {
+            this.state.teamToPlay = getOppositeTeam(piece.team);
+        }
         return move;
     }
 
@@ -299,9 +326,10 @@ export default class BoardLogic {
         const enPassantTargetSquareNotation = sectors[3];
         const enPassantTargetSquare = enPassantTargetSquareNotation === '-' ? undefined : parseSquareName(enPassantTargetSquareNotation);
 
-        return new BoardLogic(board.reverse(), {
+        const logic = new BoardLogic(board.reverse(), {
             teamToPlay: turn,
             enPassantTargetSquare,
+            ending: null,
             castling: {
                 whiteKingSide: castlingAvailability.includes('K'),
                 whiteQueenSide: castlingAvailability.includes('Q'),
@@ -309,5 +337,7 @@ export default class BoardLogic {
                 blackQueenSide: castlingAvailability.includes('q')
             }
         });
+        logic.checkEnding();
+        return logic;
     }
 }

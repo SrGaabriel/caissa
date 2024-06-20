@@ -1,9 +1,9 @@
 <script lang="ts">
     // Generate the chessboard cells data
     import { BoardLogic, Highlighting, type Piece, Team } from '$lib';
-    import { flip } from 'svelte/animate'
+    import { flip } from 'svelte/animate';
     import { getMoveSound } from '$lib/sound/sounds';
-    import { getOppositeTeam } from '$lib/game/logic';
+    import { GameEnding, getOppositeTeam } from '$lib/game/logic';
 
     type Cell = {
         x: number,
@@ -27,7 +27,7 @@
     let dragTimeout: number | null = null;
     const isScreenMirrored: boolean = false;
     $: teamToPlay = board.state.teamToPlay;
-    $: checkmate = false;
+    $: ending = board.state.ending;
     drawBoard(Team.White);
 
     function drawBoard(team: Team) {
@@ -232,7 +232,6 @@
     function playMove(currentX: number, currentY: number, futureX: number, futureY: number): boolean {
         const move = board.playMove(currentX, currentY, futureX, futureY);
         if (!move) return false;
-        checkmate = move.checkmate;
         const sound = getMoveSound(move);
         console.log(sound);
         const audio = new Audio(`sounds/${getMoveSound(move)}.mp3`);
@@ -314,6 +313,14 @@
         selectedCell = null;
     }
 
+    function getGameEnding(): string {
+        if (!ending) throw Error("Game hasn't ended");
+        switch (ending) {
+            case GameEnding.CHECKMATE: return `Checkmate! ${teamToPlay}`
+            case GameEnding.STALEMATE: return `Stalemate! Draw`
+        }
+    }
+
     function starting() {
         reset('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     }
@@ -358,8 +365,8 @@
         </div>
         <div id="sidebar">
             <div class="sidebar-overheader">
-                <div class="turn-color-palette" style={`--turn-color: ${(checkmate ? getOppositeTeam(teamToPlay) : teamToPlay) === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
-                <span class="team-to-play">{checkmate ? `Checkmate! ${getOppositeTeam(teamToPlay)}!` : `${teamToPlay} to play!`}</span>
+                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
+                <span class="team-to-play">{ending ? getGameEnding() : `${teamToPlay} to play!`}</span>
             </div>
         </div>
     </div>

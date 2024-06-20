@@ -72,6 +72,7 @@ export function calculateMovesForPawn(board: BoardLogic, team: Team, x: number, 
 
 function canPawnMarch(board: BoardLogic, x: number, y: number, steps: number): boolean {
     const newY = y + steps;
+    if (newY > 8) return false;
     const impedingPiece = board.getPieceAt(x, newY);
     return !impedingPiece;
 }
