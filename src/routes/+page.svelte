@@ -1,9 +1,10 @@
 <script lang="ts">
     // Generate the chessboard cells data
     import { BoardLogic, Highlighting, type Piece, Team } from '$lib';
-    import { flip } from 'svelte/animate';
+    import { crossfade } from 'svelte/transition';
     import { getMoveSound } from '$lib/sound/sounds';
-    import { GameEnding, getOppositeTeam } from '$lib/game/logic';
+    import { GameEnding } from '$lib/game/logic';
+    import { linear } from 'svelte/easing';
 
     type Cell = {
         x: number,
@@ -15,6 +16,11 @@
         x: number,
         y: number,
     }
+
+    const [send, receive] = crossfade({
+        duration: 250,
+        easing: linear,
+    });
 
     // const fen = '5r1k/p6p/8/3Bqp1Q/P1p5/7P/5b2/R2R3K w - - 4 37';
     // const fen = `1nq2b1r/rb6/1ppp1npp/p7/4P1PP/2NPk2B/PPP2p1N/RQ2K1R1 w Q - 0 25`;
@@ -72,6 +78,7 @@
     }
 
     function handleSquareClick(event: Event) {
+        if (ending) return;
         const element = event.target as HTMLElement;
         if (!element.dataset.xpos || !element.dataset.ypos) {
             console.error(`Element inside cell not identified: ${element.nodeName}`);
@@ -159,6 +166,7 @@
     }
 
     function handleMouseDown(event: MouseEvent) {
+        if (ending) return;
         if (event.button === 2) return;
         const element = event.target as HTMLElement;
         if (!element.dataset.xpos || !element.dataset.ypos) {
@@ -330,26 +338,28 @@
     <div id="container">
         <div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
             {#each cells as cell (cell.x + '-' + cell.y)}
+                {@const piece = board.getPieceAt(cell.x,cell.y)}
                 <div
                     id={`cell-${cell.x}-${cell.y}`}
                     data-xpos={cell.x}
                     data-ypos={cell.y}
-                    data-haspiece={!(!board.getPieceAt(cell.x,cell.y))}
+                    data-haspiece={piece != null}
                     data-highlighting={cell.highlighting}
                     draggable="false"
-                    animate:flip
                     on:click={handleSquareClick}
                     on:mousedown={handleMouseDown}
                     on:contextmenu={handleContextMenu}
                     class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
                 >
-                    {#if board.getPieceAt(cell.x,cell.y) != null}
+                    {#if piece != null}
                         <img
                           id={`asset-${cell.x}-${cell.y}`}
-                          src={`${getPieceAsset(board.getPieceAt(cell.x,cell.y))}`}
+                          src={`${getPieceAsset(piece)}`}
                           data-xpos={cell.x}
                           data-ypos={cell.y}
                           class="pieceAsset"
+                          in:send={{ key: piece }}
+                          out:receive={{ key: piece }}
                           draggable="false"
                           unselectable="on"
                           height=96
