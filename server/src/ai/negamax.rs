@@ -1,11 +1,11 @@
+use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash};
 use crate::ai::ChessAI;
 use crate::game::engine::BoardLogic;
-use crate::game::{Move, PieceType};
-use std::collections::HashMap;
-use std::cmp;
+use crate::game::Move;
 
 pub struct Negamax {
-    transposition_table: HashMap<u64, (i32, i32)>, // (depth, eval)
+    transposition_table: HashMap<u64, (i32, i32, i32)>, // Store hash -> (depth, alpha, beta)
 }
 
 impl Negamax {
@@ -15,95 +15,54 @@ impl Negamax {
         }
     }
 
-    fn negamax(&mut self, board: &BoardLogic, depth: i32, mut alpha: i32, beta: i32, color: i32) -> i32 {
+    fn negamax(&mut self, board: BoardLogic, depth: i32, mut alpha: i32, mut beta: i32, color: i32) -> i32 {
+        // let hash = board.hash(&mut DefaultHasher::new()); // Hash the board position
+        // if let Some((cached_depth, cached_alpha, cached_beta)) = self.transposition_table.get(&hash) {
+        //     if *cached_depth >= depth {
+        //         if *cached_alpha >= beta {
+        //             return *cached_alpha;
+        //         }
+        //         if *cached_beta <= alpha {
+        //             return *cached_beta;
+        //         }
+        //         alpha = alpha.max(*cached_alpha);
+        //         beta = beta.min(*cached_beta);
+        //     }
+        // }
+
         if depth == 0 {
-            return self.quiescence(board, alpha, beta, color);
+            let score = color * board.evaluate_position(board.state.team_to_play);
+            // self.transposition_table.insert(hash, (depth, score, score)); // Cache the position
+            return score;
         }
 
-        let mut max_eval = i32::MIN;
-        let moves = board.get_all_moves_for_team(board.state.team_to_play);
-        let mut ordered_moves = self.order_moves(board, moves);
-
-        for mov in ordered_moves {
+        let mut max_eval = i32::MIN + 1;
+        for mov in board.get_all_moves_for_team(board.state.team_to_play) { // Implement move ordering
             let mut new_board = board.clone();
             new_board.play_move(mov.from.x, mov.from.y, mov.to.x, mov.to.y, false, true);
-            let eval = -self.negamax(&new_board, depth - 1, -beta, -alpha, -color);
-            max_eval = cmp::max(max_eval, eval);
-            alpha = cmp::max(alpha, eval);
+            let eval = -self.negamax(new_board, depth - 1, -beta, -alpha, -color);
+            max_eval = max_eval.max(eval);
+            alpha = alpha.max(eval);
             if alpha >= beta {
                 break;
             }
         }
 
+        // self.transposition_table.insert(hash, (depth, alpha, beta)); // Cache the position
         max_eval
-    }
-
-    fn quiescence(&self, board: &BoardLogic, mut alpha: i32, beta: i32, color: i32) -> i32 {
-        let stand_pat = color * board.evaluate_position(board.state.team_to_play);
-        if stand_pat >= beta {
-            return beta;
-        }
-        if alpha < stand_pat {
-            alpha = stand_pat;
-        }
-
-        let captures = board.get_all_capture_moves_for_team(board.state.team_to_play);
-        for mov in captures {
-            let mut new_board = board.clone();
-            new_board.play_move(mov.from.x, mov.from.y, mov.to.x, mov.to.y, false, true);
-            let eval = -self.quiescence(&new_board, -beta, -alpha, -color);
-            if eval >= beta {
-                return beta;
-            }
-            if eval > alpha {
-                alpha = eval;
-            }
-        }
-        alpha
-    }
-
-    fn order_moves(&self, board: &BoardLogic, moves: Vec<Move>) -> Vec<Move> {
-        let mut scored_moves: Vec<(i32, Move)> = moves.into_iter()
-            .map(|m| (self.score_move(board, &m), m))
-            .collect();
-        scored_moves.sort_by(|a, b| b.0.cmp(&a.0));
-        scored_moves.into_iter().map(|(_, m)| m).collect()
-    }
-
-    fn score_move(&self, board: &BoardLogic, mov: &Move) -> i32 {
-        // Simple move ordering heuristic: captures and promotions
-        if mov.capture {
-            return 1000 + match board.get_piece_at(mov.to.x, mov.to.y) {
-                None => 0,
-                Some(piece) => match piece.piece_type {
-                    PieceType::Pawn => 1,
-                    PieceType::Knight => 3,
-                    PieceType::Bishop => 3,
-                    PieceType::Rook => 5,
-                    PieceType::Queen => 9,
-                    PieceType::King => 0,
-                }
-            };
-        }
-        if mov.promotion {
-            return 900;
-        }
-        0
     }
 }
 
 impl ChessAI for Negamax {
     fn get_best_move(&mut self, board: BoardLogic, depth: i32) -> Option<Move> {
         let mut best_move: Option<Move> = None;
-        let mut max_eval = i32::MIN;
-
-        let moves = board.get_all_moves_for_team(board.state.team_to_play);
-        let ordered_moves = self.order_moves(&board, moves);
-
-        for mov in ordered_moves {
+        let mut max_eval = i32::MIN + 1;
+        let alpha = i32::MIN + 1;
+        let beta = i32::MAX - 1;
+        for mov in board.get_all_moves_for_team(board.state.team_to_play) { // Implement move ordering
             let mut new_board = board.clone();
             new_board.play_move(mov.from.x, mov.from.y, mov.to.x, mov.to.y, false, true);
-            let eval = -self.negamax(&new_board, depth - 1, i32::MIN, i32::MAX, -1);
+            let eval = -self.negamax(new_board, depth - 1, alpha, beta, -1);
             if eval > max_eval {
                 max_eval = eval;
                 best_move = Some(mov);

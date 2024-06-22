@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use crate::game::moves::{calculate_moves_for_bishop, calculate_moves_for_king, calculate_moves_for_knight, calculate_moves_for_pawn, calculate_moves_for_queen, calculate_moves_for_rook};
+use crate::game::moves::{calculate_moves_for_bishop, calculate_moves_for_king, calculate_moves_for_knight, calculate_moves_for_pawn, calculate_moves_for_queen, calculate_moves_for_rook, is_space_threatened};
 use crate::game::{BoardState, CastlingRights, Coordinates, GameEnding, get_opposite_team, Move, Piece, PieceType, Side, Team, update_castling_state};
 use crate::util::parse_square_name;
 
@@ -62,23 +62,6 @@ impl BoardLogic {
             }
         }
         spaces
-    }
-
-    pub fn is_space_threatened(&self, x: i8, y: i8) -> bool {
-        let mut threatened = false;
-        for y in 1..=8 {
-            for x in 1..=8 {
-                if let Some(piece) = self.get_piece_at(x, y) {
-                    if piece.team != self.state.team_to_play {
-                        if self.optimistically_calculate_piece_moves(x, y, piece, true).iter().any(|&coord| coord.x == x && coord.y == y) {
-                            threatened = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        threatened
     }
 
     pub fn is_castling_available(&self, team: Team) -> bool {
@@ -232,14 +215,30 @@ impl BoardLogic {
         }
     }
 
+    pub fn find_king(&self, team: Team) -> Option<Coordinates> {
+        for y in 1..=8 {
+            for x in 1..=8 {
+                if let Some(piece) = self.get_piece_at(x, y) {
+                    if piece.piece_type == PieceType::King && piece.team == team {
+                        return Some(Coordinates { x, y });
+                    }
+                }
+            }
+        }
+        None
+    }
+
     pub fn hypothetically_calculate_moves_for(&self, x: i8, y: i8, piece: Piece, threats_only: bool) -> Vec<Move> {
         let mut legal_moves = vec![];
         let coordinates = self.optimistically_calculate_piece_moves(x, y, piece, threats_only);
         for coordinate in coordinates.iter() {
             let mut hypothetical = self.clone();
             let mov = hypothetical.play_move(x, y, coordinate.x, coordinate.y, false, false);
-            if !hypothetical.is_team_in_check(piece.team) {
-                legal_moves.push(mov.unwrap());
+            let king = hypothetical.find_king(piece.team);
+            if let Some(king) = king {
+                if !is_space_threatened(&king, self, piece.team) {
+                    legal_moves.push(mov.unwrap());
+                }
             }
         }
         legal_moves
@@ -273,7 +272,6 @@ impl BoardLogic {
         piece: Piece,
         threats_only: bool
     ) -> Vec<Coordinates> {
-        println!("Used");
         let mut moves = Vec::new();
         match piece.piece_type {
             PieceType::King => moves.extend(calculate_moves_for_king(self, piece.team, x, y)),
