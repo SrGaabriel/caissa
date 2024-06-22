@@ -1,37 +1,28 @@
-use axum::Router;
-use axum::routing::{get, post};
-use tokio::net::TcpListener;
-use crate::game::engine::BoardLogic;
-use crate::server::{get_best_move, get_piece_moves, get_team_moves};
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use crate::board::{BitBoard, Pieces, Team, Teams};
+use crate::board::hybrid::HybridChessBoard;
+use crate::math::pawns::calculate_all_pawn_moves;
 
-mod game;
-mod util;
-mod server;
-mod ai;
+pub mod board;
+pub mod game;
+mod math;
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new()
-        .route("/api/playground/moves/best", post(get_best_move))
-        .route("/api/playground/moves/team", post(get_team_moves))
-        .route("/api/playground/moves/piece", post(get_piece_moves))
-        .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http());
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::ERROR)
-        .init();
-    let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let board = HybridChessBoard::from_fen("rnb1k2B/1pp1qp2/4p2p/8/4Q1P1/bp6/P1PP1P1P/1K1R1BNR b q - 0 13").unwrap();
+    let white_pawns = board.bit_position.get_pieces(Teams::BLACK, Pieces::PAWN);
+    let pawn = board.mail_box.get_piece_at(21);
+    println!("{:?}", pawn);
 }
 
-fn print_board(board: &BoardLogic) {
-    for y in (1..9).rev() {
-        for x in 1..9 {
-            let piece = board.get_piece_at(x, y);
-            match piece {
-                Some(p) => print!("{}", util::get_piece_letter(p.piece_type)),
-                None => print!("."),
+
+pub fn print(board: &BitBoard) {
+    for rank in (0..8).rev() {
+        for file in 0..8 {
+            let index = rank * 8 + file;
+            if board.0 & (1 << index) != 0 {
+                print!("1 ");
+            } else {
+                print!("0 ");
             }
         }
         println!();

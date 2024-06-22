@@ -8,9 +8,9 @@
 
     const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     let board = BoardLogic.fromFEN(fen);
-    const ai = new ArtificialIntelligence(board, Team.Black);
+    const ai = new ArtificialIntelligence(board, Team.BLACK);
     const opponent: Player = {
-        team: Team.Black,
+        team: Team.BLACK,
         onMove
     }
     $: ending = board.state.ending;
@@ -34,7 +34,7 @@
         <Chessboard bind:board={board} opponent={opponent}/>
         <div id="sidebar">
             <div class="sidebar-overheader">
-                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
+                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.BLACK ? '#191a19' : '#dbdbdb'}`}></div>
                 <span class="team-to-play">{ending ? getGameEnding() : `${teamToPlay} to play!`}</span>
             </div>
         </div>
@@ -98,7 +98,7 @@
         font-size: 26px;
         margin-left: 16px;
         margin-top: 2px;
-        font-family: "Archivo Black", sans-serif;
+        font-family: "Archivo BLACK", sans-serif;
         font-weight: 400;
         font-style: normal;
     }

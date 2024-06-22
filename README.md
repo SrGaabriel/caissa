@@ -4,13 +4,13 @@
 > Note: piece assets are from https://chess.com/
 
 Move calculating checklist:
-- [x] Pawn capture
-- [x] Pawn march
-- [x] Bishop cross
-- [x] Knight jump
-- [x] Rook slide
-- [x] Queen slide+cross
-- [x] King one-ranged slide+cross
+- [x] PAWN capture
+- [x] PAWN march
+- [x] BISHOP cross
+- [x] KNIGHT jump
+- [x] ROOK slide
+- [x] QUEEN slide+cross
+- [x] KING one-ranged slide+cross
 - [x] En passant
 - [x] Check coercion
 - [x] Check dodging
