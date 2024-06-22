@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::game::engine::BoardLogic;
-use crate::game::{Coordinates, Side, Team};
+use crate::game::{Coordinates, get_opposite_team, PieceType, Side, Team};
 
 fn has_castling_space(board: &BoardLogic, x: i8, y: i8, side: Side) -> bool {
     let range = match side {
@@ -197,4 +197,45 @@ pub fn calculate_progressive_moves(
         }
     }
     moves
+}
+
+// Here we'll check in all directions: knights, queens, pawns and kings
+// Then, if one of the directions finds an opponent threat, we'll return true
+pub fn is_space_threatened(space: &Coordinates, board: &BoardLogic, team: Team) -> bool {
+    let pawn_moves: Vec<Coordinates> = calculate_moves_for_pawn(board, get_opposite_team(team), space.x, space.y, true);
+    if pawn_moves.contains(space) {
+        return true;
+    }
+
+    let rook_moves: Vec<Coordinates> = calculate_moves_for_queen(board, team, space.x, space.y);
+    if check_if_piece_is_inside_coords(board, rook_moves, vec![PieceType::Rook, PieceType::Queen]) {
+        return true;
+    }
+    let bishop_moves: Vec<Coordinates> = calculate_moves_for_bishop(board, team, space.x, space.y);
+    if check_if_piece_is_inside_coords(board, bishop_moves, vec![PieceType::Bishop, PieceType::Queen]) {
+        return true;
+    }
+    let knight_moves: Vec<Coordinates> = calculate_moves_for_knight(board, team, space.x, space.y);
+    if check_if_piece_is_inside_coords(board, knight_moves, vec![PieceType::Knight]) {
+        return true;
+    }
+    let king_moves: Vec<Coordinates> = calculate_moves_for_king(board, team, space.x, space.y);
+    if check_if_piece_is_inside_coords(board, king_moves, vec![PieceType::King]) {
+        return true;
+    }
+    return false;
+}
+
+fn check_if_piece_is_inside_coords(board: &BoardLogic, coordinates: Vec<Coordinates>, pieces: Vec<PieceType>) -> bool {
+    for coord in coordinates {
+        if !board.is_position_valid(coord.x, coord.y) {
+            continue;
+        }
+        if let Some(piece) = board.get_piece_at(coord.x, coord.y) {
+            if pieces.contains(&piece.piece_type) {
+                return true;
+            }
+        }
+    }
+    false
 }

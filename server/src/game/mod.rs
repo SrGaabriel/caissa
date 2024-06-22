@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 pub mod engine;
 pub mod moves;
 
-#[derive(Clone, Copy, PartialEq, Debug, Serialize)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Hash, Deserialize)]
 pub enum Team {
     White,
     Black
 }
 
-#[derive(Clone, Copy, PartialEq, Debug, Serialize)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Hash, Deserialize)]
 pub enum PieceType {
     King,
     Queen,
@@ -46,7 +46,7 @@ impl Piece {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Hash)]
 pub struct BoardState {
     pub castling: CastlingRights,
     pub en_passant_target_square: Option<Coordinates>,
@@ -60,7 +60,7 @@ pub struct Coordinates {
     pub y: i8,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Hash)]
 pub struct CastlingRights {
     pub white_king_side: bool,
     pub white_queen_side: bool,
@@ -68,7 +68,7 @@ pub struct CastlingRights {
     pub black_queen_side: bool,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Hash, Deserialize)]
 pub enum GameEnding {
     Checkmate,
     Stalemate,

@@ -1,3 +1,4 @@
+use std::thread;
 use axum::http::StatusCode;
 use axum::Json;
 use serde::{Serialize, Deserialize};
@@ -31,7 +32,14 @@ pub async fn get_best_move(
 ) -> (StatusCode, Json<Move>) {
     let board = BoardLogic::from_fen(&payload.fen);
     let mut ai = crate::ai::negamax::Negamax::new();
-    let best_move = ai.get_best_move(board, 1).unwrap();
+
+    let thread = thread::Builder::new()
+        .name("negamax".to_string())
+        .stack_size(32 * 1024 * 1024)
+        .spawn(move || {
+            ai.get_best_move(board, 4)
+        }).unwrap();
+    let best_move = thread.join().unwrap().unwrap();
     (StatusCode::OK, Json(best_move))
 }
 
