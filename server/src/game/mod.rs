@@ -1,5 +1,7 @@
+pub mod fen;
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-// Goes from 1 to 8
+// Goes from 0 to 7
 pub struct Vector {
     pub x: i32,
     pub y: i32,
