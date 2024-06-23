@@ -1,6 +1,6 @@
-pub mod hybrid;
-
-use std::ops::{BitAnd, BitOr, Not, Shl, Shr};
+pub mod board;
+pub mod state;
+use std::ops::{BitAnd, BitOr, BitOrAssign, Div, Not, Rem, Shl, Shr};
 
 pub type Team = usize;
 pub struct Teams;
@@ -110,6 +110,28 @@ impl Not for BitBoard {
 
     fn not(self) -> Self::Output {
         BitBoard(!self.0)
+    }
+}
+
+impl BitOrAssign<u64> for BitBoard {
+    fn bitor_assign(&mut self, rhs: u64) {
+        self.0 |= rhs;
+    }
+}
+
+impl Rem for BitBoard {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        BitBoard(self.0 % rhs.0)
+    }
+}
+
+impl Div for BitBoard {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        BitBoard(self.0 / rhs.0)
     }
 }
 
