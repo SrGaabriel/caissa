@@ -1,6 +1,7 @@
-use crate::board::{BitBoard, MailBox, Pieces, Team, Teams};
-use crate::math::knights::calculate_all_knight_moves;
+use crate::board::{BitBoard, MailBox, Pieces, Teams};
 use crate::game::fen;
+use crate::math::knights::mask_all_knight_moves;
+use crate::math::sliding::{properly_mask_all_bishop_moves, properly_mask_all_queen_moves, properly_mask_all_rook_moves, properly_mask_bishop_moves, properly_mask_rook_moves};
 
 pub mod board;
 pub mod game;
@@ -8,8 +9,8 @@ pub mod math;
 
 #[tokio::main]
 async fn main() {
-    let board = fen::new_board("rnb1k2B/1pp1qp2/4p2p/8/4Q1P1/bp6/P1PP1P1P/1K1R1BNR b q - 0 13").unwrap();
-    print(&calculate_all_knight_moves(&board.bits, Teams::BLACK));
+    let board = fen::new_board("4r1k1/pp3p1p/2n2Qp1/3p2bq/1P1P2b1/P1N5/R3N1B1/5KR1 w - - 12 24").unwrap();
+    print(&board.calculate_all_team_moves(Teams::WHITE));
 }
 
 pub fn print(board: &BitBoard) {

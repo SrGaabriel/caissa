@@ -1,36 +1,39 @@
-use lazy_static::lazy_static;
 use crate::board::{BitBoard, BitPosition, Piece, Pieces, Team};
+use crate::math::{NOT_A_FILE, NOT_H_FILE};
 
-pub fn calculate_knight_moves(position: &BitPosition, team: usize, knight_bit: usize) -> BitBoard {
-    let knight = BitBoard(1 << knight_bit);
-    mask_knight_moves(&knight)
-}
+const NOT_AB_FILE: u64 = 0xfcfcfcfcfcfcfcfc;
+const NOT_HG_FILE: u64 = 0x3f3f3f3f3f3f3f3f;
 
 pub fn calculate_all_knight_moves(position: &BitPosition, team: usize) -> BitBoard {
+    let team_pieces = position.get_team_pieces(team);
     let knights = position.get_pieces(team, Pieces::KNIGHT);
-    mask_knight_moves(&knights)
+    mask_all_knight_moves(&knights) & !team_pieces
 }
 
-
-pub fn mask_knight_moves(knights: &BitBoard) -> BitBoard {
-    let knights = knights.0;
-
-    let not_a_file = 0xfefefefefefefefe;
-    let not_h_file = 0x7f7f7f7f7f7f7f7f;
-    let not_ab_file = 0xfcfcfcfcfcfcfcfc;
-    let not_gh_file = 0x3f3f3f3f3f3f3f3f;
-
-    // Calculate the potential moves
+pub fn mask_knight_moves(knight_bit: u64) -> BitBoard {
     let mut moves = 0;
-
-    moves |= (knights & not_a_file) << 6; // 2 up 1 left
-    moves |= (knights & not_h_file) << 10; // 2 up 1 right
-    moves |= (knights & not_a_file) >> 10; // 2 down 1 left
-    moves |= (knights & not_h_file) >> 6; // 2 down 1 right
-    moves |= (knights & not_ab_file) << 15; // 1 up 2 left
-    moves |= (knights & not_gh_file) << 17; // 1 up 2 right
-    moves |= (knights & not_ab_file) >> 17; // 1 down 2 left
-    moves |= (knights & not_gh_file) >> 15; // 1 down 2 right
-
+    if ((knight_bit >> 17) & NOT_H_FILE) != 0 { moves |= knight_bit >> 17; }
+    if ((knight_bit >> 15) & NOT_A_FILE) != 0 { moves |= knight_bit >> 15; }
+    if ((knight_bit >> 10) & NOT_HG_FILE) != 0 { moves |= knight_bit >> 10; }
+    if ((knight_bit >> 6) & NOT_AB_FILE) != 0 { moves |= knight_bit >> 6; }
+    if ((knight_bit << 17) & NOT_A_FILE) != 0 { moves |= knight_bit << 17; }
+    if ((knight_bit << 15) & NOT_H_FILE) != 0 { moves |= knight_bit << 15; }
+    if ((knight_bit << 10) & NOT_AB_FILE) != 0 { moves |= knight_bit << 10; }
+    if ((knight_bit << 6) & NOT_HG_FILE) != 0 { moves |= knight_bit << 6; }
     BitBoard(moves)
+}
+
+pub fn mask_all_knight_moves(knights: &BitBoard) -> BitBoard {
+    let mut moves = BitBoard(0);
+    let mut bitboard = knights.0;
+
+    while bitboard != 0 {
+        let knight = 1 << bitboard.trailing_zeros();
+        bitboard ^= knight;
+
+        let attacks = mask_knight_moves(knight);
+        moves.0 |= attacks.0;
+    }
+
+    moves
 }
