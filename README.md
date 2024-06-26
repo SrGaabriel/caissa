@@ -1,7 +1,7 @@
 # Caissa
 
-[![Example board](static/brand/example_board.png)]
-> Note: piece assets are from https://chess.com/
+[![Example board](web/static/brand/example_game.mp4)]
+> Note: piece assets are from https://chess.com/ and sound effects from https://lichess.org/
 
 Move calculating checklist:
 - [x] PAWN capture
@@ -11,8 +11,8 @@ Move calculating checklist:
 - [x] ROOK slide
 - [x] QUEEN slide+cross
 - [x] KING one-ranged slide+cross
-- [x] En passant
-- [x] Check coercion
-- [x] Check dodging
-- [x] Promotion (only for queen)
-- [x] Castling
+- [] En passant
+- [] Check coercion
+- [] Check dodging
+- [] Promotion (only for queen)
+- [] Castling

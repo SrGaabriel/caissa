@@ -18,6 +18,12 @@ pub fn calculate_all_pawn_moves(position: BitPosition, team: Team) -> BitBoard {
     pawn_march_moves | pawn_capture_moves
 }
 
+pub fn mask_all_pawn_moves(pawns: &BitBoard, empty: &BitBoard, enemy_pieces: &BitBoard, team: Team) -> BitBoard {
+    let pawn_march_moves = mask_pawn_march_moves(*pawns, *empty, team);
+    let pawn_capture_moves = mask_pawn_capture_moves(*pawns, *enemy_pieces, team);
+    pawn_march_moves | pawn_capture_moves
+}
+
 pub fn mask_pawn_march_moves(pawns: BitBoard, empty: BitBoard, team: Team) -> BitBoard {
     let pawn_one_forward_moves = pawns.shift_up(8, &team) & empty;
 
