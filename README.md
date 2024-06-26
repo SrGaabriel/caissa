@@ -1,6 +1,6 @@
 # Caissa
 
-[![Example board](web/static/brand/example_game.mp4)]
+![Example board](/web/static/brand/background_board.png)
 > Note: piece assets are from https://chess.com/ and sound effects from https://lichess.org/
 
 Move calculating checklist:
