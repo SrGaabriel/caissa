@@ -1,5 +1,6 @@
-use crate::board::{BitBoard, BitPosition, Pieces, Teams};
+use crate::board::{BitBoard, BitPosition, Pieces, Team, Teams};
 use crate::board::board::ChessBoard;
+use crate::board::state::{CastlingRights, CastlingSides, ChessState};
 
 pub fn new_board(fen: &str) -> Option<ChessBoard> {
     let parts: Vec<&str> = fen.split_whitespace().collect();
@@ -39,6 +40,28 @@ pub fn new_board(fen: &str) -> Option<ChessBoard> {
             _ => return None,
         }
     }
+    let team_to_play = match parts[1] {
+        "w" => Teams::WHITE,
+        "b" => Teams::BLACK,
+        _ => return None,
+    };
 
-    Some(ChessBoard::new(bit_position))
+    let castling_rights_part = parts[2];
+    let mut castling_rights = CastlingRights::none();
+    for c in castling_rights_part.chars() {
+        match c {
+            'K' => castling_rights.allow(Teams::WHITE, CastlingSides::KINGSIDE),
+            'Q' => castling_rights.allow(Teams::WHITE, CastlingSides::QUEENSIDE),
+            'k' => castling_rights.allow(Teams::BLACK, CastlingSides::KINGSIDE),
+            'q' => castling_rights.allow(Teams::BLACK, CastlingSides::QUEENSIDE),
+            '-' => break,
+            _ => return None,
+        }
+    }
+    let state = ChessState {
+        castling_rights,
+        team_to_play
+    };
+
+    Some(ChessBoard::new(bit_position, state))
 }
