@@ -15,4 +15,5 @@ Move calculating checklist:
 - [] Check coercion
 - [] Check dodging
 - [] Promotion (only for queen)
-- [] Castling
+- [x] Castling
+> Disclaimer: move generation code is currently very repetitive, refactor coming soon

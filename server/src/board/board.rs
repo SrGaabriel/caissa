@@ -1,23 +1,25 @@
 use crate::board::{BitBoard, BitPosition, get_opposite_team, Piece, Pieces, Team};
-use crate::math::kings::mask_king_moves;
+use crate::board::state::ChessState;
+use crate::math::kings::{calculate_king_castling_moves, mask_king_moves};
 use crate::math::knights::mask_all_knight_moves;
 use crate::math::pawns::mask_all_pawn_moves;
 use crate::math::sliding::{properly_mask_all_bishop_moves, properly_mask_all_queen_moves, properly_mask_all_rook_moves};
-use crate::print;
 
 pub struct ChessBoard {
-    pub bits: BitPosition
+    pub bits: BitPosition,
+    pub state: ChessState
 }
 
 impl ChessBoard {
-    pub fn new(bits: BitPosition) -> ChessBoard {
+    pub fn new(bits: BitPosition, state: ChessState) -> ChessBoard {
         ChessBoard {
-            bits
+            bits,
+            state
         }
     }
 
 
-    pub fn calculate_all_team_moves(&self, team: Team) -> BitBoard {
+    pub fn optimistically_calculate_team_moves(&self, team: Team) -> BitBoard {
         let mut moves = BitBoard(0);
         let opponent_pieces = self.bits.get_team_pieces(get_opposite_team(team));
         let team_pieces = self.bits.get_team_pieces(team);
@@ -40,7 +42,9 @@ impl ChessBoard {
         moves.0 |= queen_moves.0;
 
         let king_moves = mask_king_moves(self.bits.get_pieces(team, Pieces::KING).0);
+        let king_castling_moves = calculate_king_castling_moves(&self.state.castling_rights, team, &occupied_squares);
         moves.0 |= king_moves.0;
+        moves.0 |= king_castling_moves.0;
 
         moves & !team_pieces
     }
