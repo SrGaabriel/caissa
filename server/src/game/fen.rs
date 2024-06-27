@@ -1,4 +1,4 @@
-use crate::board::{BitBoard, BitPosition, Pieces, Team, Teams};
+use crate::board::{BitBoard, BitPosition, GamePiece, MailBox, Pieces, Teams};
 use crate::board::board::ChessBoard;
 use crate::board::state::{CastlingRights, CastlingSides, ChessState};
 use crate::game::square::square_to_vector;
@@ -8,7 +8,7 @@ pub fn new_board(fen: &str) -> Option<ChessBoard> {
     if parts.len() != 6 {
         return None;
     }
-
+    let mut mail_box = MailBox::new();
     let mut bit_position = BitPosition::new();
 
     let mut rank = 7;
@@ -29,6 +29,7 @@ pub fn new_board(fen: &str) -> Option<ChessBoard> {
                 let team = if c.is_ascii_uppercase() { Teams::WHITE } else { Teams::BLACK };
                 let bitboard = bit_position.get_pieces(team, piece) | BitBoard(1 << (rank * 8 + file));
                 bit_position.set_bitboard(team, piece, bitboard);
+                mail_box.set_piece_at(rank * 16 + file, Some(GamePiece::from(piece, team)));
                 file += 1;
             }
             '/' => {
@@ -69,5 +70,5 @@ pub fn new_board(fen: &str) -> Option<ChessBoard> {
         team_to_play
     };
 
-    Some(ChessBoard::new(bit_position, state))
+    Some(ChessBoard::new(bit_position, mail_box, state))
 }

@@ -1,4 +1,4 @@
-use crate::board::{BitBoard, BitPosition, Piece, Pieces, Team};
+use crate::board::{BitBoard, BitPosition, Pieces};
 use crate::math::{NOT_A_FILE, NOT_H_FILE};
 
 const NOT_AB_FILE: u64 = 0xfcfcfcfcfcfcfcfc;
