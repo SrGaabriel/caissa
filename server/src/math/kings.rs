@@ -12,11 +12,11 @@ pub const BLACK_KINGSIDE_CASTLE_BLOCKS: u64 = 0x6000000000000000;
 
 pub fn calculate_king_moves(position: &BitPosition, team: Team) -> BitBoard {
     let king = position.get_pieces(team, Pieces::KING);
-    let king_moves = mask_king_moves(king.0);
+    let king_moves = mask_king_moves(king.0, None);
     king_moves
 }
 
-pub fn mask_king_moves(king_bit: u64) -> BitBoard {
+pub fn mask_king_moves(king_bit: u64, opponent_threats: Option<&BitBoard>) -> BitBoard {
     let not_a_file = 0xfefefefefefefefe;
     let not_h_file = 0x7f7f7f7f7f7f7f7f;
 
@@ -30,7 +30,11 @@ pub fn mask_king_moves(king_bit: u64) -> BitBoard {
     if (king_bit >> 7) & not_a_file != 0 { moves |= king_bit >> 7; }
     if (king_bit << 9) & not_h_file != 0 { moves |= king_bit << 9; }
 
-    BitBoard(moves)
+    BitBoard(if let Some(threats) = opponent_threats {
+        moves & !threats.0
+    } else {
+        moves
+    })
 }
 
 pub fn calculate_king_castling_moves(castling_rights: &CastlingRights, team: Team, occupied_spaces: &BitBoard) -> BitBoard {

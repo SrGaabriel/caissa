@@ -1,5 +1,6 @@
 use crate::board::{Team, Teams};
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy)]
 pub struct ChessState {
     pub castling_rights: CastlingRights,
     pub en_passant_square: Option<usize>,
@@ -12,6 +13,7 @@ impl CastlingSides {
     pub const QUEENSIDE: usize = 1;
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy)]
 pub struct CastlingRights(u8);
 
 impl CastlingRights {
