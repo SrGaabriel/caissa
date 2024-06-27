@@ -8,9 +8,10 @@ pub mod math;
 
 #[tokio::main]
 async fn main() {
-    let board = fen::new_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/4K3 w KQkq - 0 1").unwrap();
+    let board = fen::new_board("rnbqkbnr/1pppp1pp/p7/4Pp2/8/8/PPPP1PPP/4K3 w kq f6 0 3").unwrap();
     // print(&mask_king_castling_moves(Teams::WHITE, &!board.bits.empty_squares()));
     print(&board.optimistically_calculate_team_moves(Teams::WHITE));
+    // print(&BitBoard(1 << board.state.en_passant_square.unwrap() as u64))
 }
 
 pub fn print(board: &BitBoard) {

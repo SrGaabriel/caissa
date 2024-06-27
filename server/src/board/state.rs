@@ -1,8 +1,9 @@
 use crate::board::{Team, Teams};
 
 pub struct ChessState {
-    pub(crate) castling_rights: CastlingRights,
-    pub(crate) team_to_play: Team
+    pub castling_rights: CastlingRights,
+    pub en_passant_square: Option<usize>,
+    pub team_to_play: Team
 }
 
 pub struct CastlingSides;

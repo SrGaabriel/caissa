@@ -1,4 +1,5 @@
 pub mod fen;
+mod square;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 // Goes from 0 to 7

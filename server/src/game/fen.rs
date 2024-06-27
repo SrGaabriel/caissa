@@ -1,6 +1,7 @@
 use crate::board::{BitBoard, BitPosition, Pieces, Team, Teams};
 use crate::board::board::ChessBoard;
 use crate::board::state::{CastlingRights, CastlingSides, ChessState};
+use crate::game::square::square_to_vector;
 
 pub fn new_board(fen: &str) -> Option<ChessBoard> {
     let parts: Vec<&str> = fen.split_whitespace().collect();
@@ -58,8 +59,13 @@ pub fn new_board(fen: &str) -> Option<ChessBoard> {
             _ => return None,
         }
     }
+    let en_passant_square = match parts[3] {
+        "-" => None,
+        square => Some(square_to_vector(square).bit_position_index()),
+    };
     let state = ChessState {
         castling_rights,
+        en_passant_square,
         team_to_play
     };
 
