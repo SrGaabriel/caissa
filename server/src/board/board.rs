@@ -35,7 +35,7 @@ impl ChessBoard {
         let rook_moves = properly_mask_all_rook_moves(&self.bits.get_pieces(team, Pieces::ROOK), &occupied_squares);
         moves.0 |= rook_moves.0;
 
-        let pawn_moves = mask_all_pawn_moves(&self.bits.get_pieces(team, Pieces::PAWN), &empty_squares, &opponent_pieces, team);
+        let pawn_moves = mask_all_pawn_moves(&self.bits.get_pieces(team, Pieces::PAWN), &empty_squares, &opponent_pieces, &self.state.en_passant_square, team);
         moves.0 |= pawn_moves.0;
 
         let queen_moves = properly_mask_all_queen_moves(&self.bits.get_pieces(team, Pieces::QUEEN), &occupied_squares);
