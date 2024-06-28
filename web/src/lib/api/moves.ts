@@ -1,8 +1,10 @@
 import {Team} from "$lib";
 import type {Square} from "$lib/game/logic";
 
+const API = "https://d43c-2804-7f0-20-2002-a5e6-c9b9-e039-a211.ngrok-free.app";
+
 export async function fetchPieceMoves(fen: string, square: Square): Promise<any> {
-    return fetch(`https://183a-2804-7f0-20-117d-a026-8f00-f6d5-a215.ngrok-free.app/api/playground/moves/piece`, {
+    return fetch(`${API}/api/playground/moves/piece`, {
         method: 'POST',
         body: JSON.stringify({fen, coordinates: square}),
         headers: {
@@ -12,7 +14,7 @@ export async function fetchPieceMoves(fen: string, square: Square): Promise<any>
 }
 
 export async function fetchAllTeamMoves(fen: string, team: Team): Promise<any> {
-    return fetch(`https://183a-2804-7f0-20-117d-a026-8f00-f6d5-a215.ngrok-free.app/api/playground/moves/team`, {
+    return fetch(`${API}/api/playground/moves/team`, {
         method: 'POST',
         body: JSON.stringify({fen, team: team === Team.White ? 0 : 1}),
         headers: {
@@ -22,7 +24,7 @@ export async function fetchAllTeamMoves(fen: string, team: Team): Promise<any> {
 }
 
 export async function fetchBestMove(fen: string): Promise<any> {
-    return fetch(`https://183a-2804-7f0-20-117d-a026-8f00-f6d5-a215.ngrok-free.app/api/playground/moves/best`, {
+    return fetch(`${API}/api/playground/moves/best`, {
         method: 'POST',
         body: JSON.stringify({fen}),
         headers: {

@@ -5,6 +5,7 @@ use crate::board::board::ChessBoard;
 use crate::engine::ChessEngine;
 use crate::hash::ZobristHash;
 
+#[derive(Clone)]
 pub struct MinimaxEngine {
     zobrist: ZobristHash,
     min_transposition_table: HashMap<u64, i32>,
@@ -28,7 +29,7 @@ impl MinimaxEngine {
             if maximizing_player {
                 self.max_transposition_table.insert(hash, score);
             } else {
-                self.min_transposition_table.insert(hash, score);
+                // self.min_transposition_table.insert(hash, score);
             }
             return score;
         }

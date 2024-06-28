@@ -8,7 +8,9 @@ tokio-macros = "2.3.0"
 tokio = { version = "1.38.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 axum = "0.7.5"
-tower-http = { version = "0.5.2", features = ["cors", "trace"] }
+axum-macros = "0.4.1"
+tower = "0.4.13"
+tower-http = { version = "0.5.2", features = ["cors", "trace", "add-extension"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.18"
 rand="0.8.5"

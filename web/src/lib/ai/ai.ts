@@ -19,7 +19,8 @@ export default class ArtificialIntelligence {
 
 		async respond(move: Move) {
 			const bestMove: any = await fetchBestMove(this.board.toFen());
-			this.board.playMove(bestMove.from.x, bestMove.from.y, bestMove.to.x, bestMove.to.y);
+			console.log(bestMove);
+			this.board.playMove(bestMove.origin.x+1, bestMove.origin.y+1, bestMove.target.x+1, bestMove.target.y+1);
 		}
 
 		chooseMove(board: BoardLogic, depth: number, alpha: number, beta: number): Move | null {

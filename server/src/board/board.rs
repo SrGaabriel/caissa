@@ -140,6 +140,22 @@ impl ChessBoard {
         mapped_moves
     }
 
+    pub fn calculate_move_for_piece(&self, location: Vector) -> Vec<Vector> {
+        let piece = self.mailbox.get_piece_at(location.mail_box_index());
+        if piece.is_none() {
+            return vec![];
+        }
+        let piece = piece.unwrap();
+        let team = piece.get_team();
+        let opponent_pieces = self.bits.get_team_pieces(get_opposite_team(team));
+        let team_pieces = self.bits.get_team_pieces(team);
+        let empty_squares = !(team_pieces | opponent_pieces);
+        let occupied_squares = !empty_squares;
+
+        let bitboard = individually_mask_piece_moves(location.bit_position_index() as u64, piece.get_piece(), team, &empty_squares, &occupied_squares, &opponent_pieces, &self.state.en_passant_square, None);
+        vec![]
+    }
+
     pub fn pseudo_move_generation(&self, team: Team, opponent_threats: Option<&BitBoard>) -> Vec<PossibleMoves> {
         let mut moves = vec![];
         let opponent_pieces = self.bits.get_team_pieces(get_opposite_team(team));

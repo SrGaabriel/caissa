@@ -12,8 +12,8 @@ Move calculating checklist:
 - [x] QUEEN slide+cross
 - [x] KING one-ranged slide+cross
 - [x] En passant
-- [ ] Check coercion
-- [ ] Check dodging
+- [x] Check coercion
+- [x] Check dodging
 - [ ] Promotion (only to queen)
 - [x] Castling
-> Disclaimer: move generation code is currently very repetitive, refactor coming soon
+> Disclaimer: move generation code is currently very repetitive for performance reasons, refactor coming soon
