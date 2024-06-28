@@ -99,7 +99,7 @@ pub struct PossibleMoves {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy)]
 pub struct BitPosition {
     bb_sides: [BitBoard; 2],
-    bb_pieces: [[BitBoard; 6]; 2],
+    pub(crate) bb_pieces: [[BitBoard; 6]; 2],
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy)]

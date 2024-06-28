@@ -5,7 +5,6 @@
 	import { getMoveSound } from '$lib/sound/sounds';
 	import { linear } from 'svelte/easing';
 	import type { Player } from '$lib/game/logic';
-	import {fetchPieceMoves} from "$lib/api/moves";
 
 	type Cell = {
 		x: number,
@@ -333,9 +332,7 @@
 	}
 
 	function isTeamAllowedToMove(team: Team): boolean {
-		console.log(opponent, team, opponent.team, teamToPlay);
 		const legal = !(opponent && team === opponent.team) && ((opponent && teamToPlay !== opponent.team) || (!opponent && teamToPlay === team));
-		console.log(legal);
 		return legal;
 		// if (player && team !== player) return false;
 		// if (player && teamToPlay !== player) return false;
@@ -343,43 +340,43 @@
 	}
 </script>
 
-		<div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
-			{#each cells as cell (cell.x + '-' + cell.y)}
-				{@const piece = board.getPieceAt(cell.x,cell.y)}
-				<div
-					id={`cell-${cell.x}-${cell.y}`}
+<div id="chessboard" on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} draggable="false">
+	{#each cells as cell (cell.x + '-' + cell.y)}
+		{@const piece = board.getPieceAt(cell.x,cell.y)}
+		<div
+			id={`cell-${cell.x}-${cell.y}`}
+			data-xpos={cell.x}
+			data-ypos={cell.y}
+			data-haspiece={piece != null}
+			data-highlighting={cell.highlighting}
+			draggable="false"
+			on:click={handleSquareClick}
+			on:mousedown={handleMouseDown}
+			on:contextmenu={handleContextMenu}
+			class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
+		>
+			{#if piece != null}
+				<img
+					id={`asset-${cell.x}-${cell.y}`}
+					src={`${getPieceAsset(piece)}`}
 					data-xpos={cell.x}
 					data-ypos={cell.y}
-					data-haspiece={piece != null}
-					data-highlighting={cell.highlighting}
+					class="pieceAsset"
+					in:send={{ key: piece }}
+					out:receive={{ key: piece }}
 					draggable="false"
-					on:click={handleSquareClick}
-					on:mousedown={handleMouseDown}
-					on:contextmenu={handleContextMenu}
-					class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
-				>
-					{#if piece != null}
-						<img
-							id={`asset-${cell.x}-${cell.y}`}
-							src={`${getPieceAsset(piece)}`}
-							data-xpos={cell.x}
-							data-ypos={cell.y}
-							class="pieceAsset"
-							in:send={{ key: piece }}
-							out:receive={{ key: piece }}
-							draggable="false"
-							unselectable="on"
-							height=96
-						/>
-					{/if}
-					{#if cell.highlighting === Highlighting.POSSIBLE_MOVE && board.getPieceAt(cell.x,cell.y)}
-						<span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture" draggable="false"></span>
-					{:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
-						<span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace" draggable="false"></span>
-					{/if}
-				</div>
-			{/each}
+					unselectable="on"
+					height=96
+				/>
+			{/if}
+			{#if cell.highlighting === Highlighting.POSSIBLE_MOVE && board.getPieceAt(cell.x,cell.y)}
+				<span data-xpos={cell.x} data-ypos={cell.y} class="possibleCapture" draggable="false"></span>
+			{:else if cell.highlighting === Highlighting.POSSIBLE_MOVE}
+				<span data-xpos={cell.x} data-ypos={cell.y} class="possibleSpace" draggable="false"></span>
+			{/if}
 		</div>
+	{/each}
+</div>
 
 <style>
     #chessboard {

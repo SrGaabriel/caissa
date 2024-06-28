@@ -8,9 +8,10 @@ use tower_http::add_extension::AddExtensionLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::board::{BitBoard, MailBox};
+use crate::board::{BitBoard, MailBox, Teams};
 use crate::engine::ChessEngine;
 use crate::engine::minimax::MinimaxEngine;
+use crate::game::fen;
 use crate::server::{get_best_move, get_piece_moves, get_team_moves};
 
 pub mod board;

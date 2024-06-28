@@ -29,7 +29,7 @@ impl MinimaxEngine {
             if maximizing_player {
                 self.max_transposition_table.insert(hash, score);
             } else {
-                // self.min_transposition_table.insert(hash, score);
+                self.min_transposition_table.insert(hash, score);
             }
             return score;
         }
@@ -39,7 +39,7 @@ impl MinimaxEngine {
             for mv in board.generate_moves(board.state.team_to_play) {
                 let mut board_clone = board.clone();
                 board_clone.play_move(mv.origin, mv.target, true);
-                let eval = -self.minimax(&board_clone, depth - 1, false);
+                let eval = self.minimax(&board_clone, depth - 1, false);
                 max_eval = max_eval.max(eval);
             }
             self.max_transposition_table.insert(hash, max_eval);
@@ -49,10 +49,10 @@ impl MinimaxEngine {
             for mv in board.generate_moves(get_opposite_team(board.state.team_to_play)) {
                 let mut board_clone = board.clone();
                 board_clone.play_move(mv.origin, mv.target, true);
-                let eval = -self.minimax(&board_clone, depth - 1, true);
+                let eval = self.minimax(&board_clone, depth - 1, true);
                 min_eval = min_eval.min(eval);
             }
-            // self.min_transposition_table.insert(hash, min_eval);
+            self.min_transposition_table.insert(hash, min_eval);
             min_eval
         }
     }
@@ -74,7 +74,7 @@ impl ChessEngine for MinimaxEngine {
         for mv in board.generate_moves(board.state.team_to_play) {
             let mut board_clone = board.clone();
             board_clone.play_move(mv.origin, mv.target, true);
-            let score = -self.minimax(&board_clone, depth*2 - 1, false);
+            let score = self.minimax(&board_clone, depth*2 - 1, false);
             if score > best_score {
                 best_score = score;
                 best_move = Some(mv);

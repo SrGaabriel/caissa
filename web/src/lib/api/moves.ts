@@ -1,7 +1,7 @@
 import {Team} from "$lib";
 import type {Square} from "$lib/game/logic";
 
-const API = "https://d43c-2804-7f0-20-2002-a5e6-c9b9-e039-a211.ngrok-free.app";
+const API = "https://2049-2804-7f0-20-2002-f04b-565-93b6-927c.ngrok-free.app";
 
 export async function fetchPieceMoves(fen: string, square: Square): Promise<any> {
     return fetch(`${API}/api/playground/moves/piece`, {
