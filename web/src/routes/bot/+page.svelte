@@ -37,6 +37,7 @@
                 <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
                 <span class="team-to-play">{ending ? getGameEnding() : `${teamToPlay} to play!`}</span>
             </div>
+            <span>{board.toFen()}</span>
         </div>
     </div>
 </main>
@@ -52,7 +53,6 @@
         height: 100vh;
         width: 100vw;
         background-color: #bed2d0;
-        user-select: none;
     }
 
     #container {

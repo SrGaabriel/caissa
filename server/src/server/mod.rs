@@ -42,7 +42,7 @@ pub async fn get_best_move(
         .name("negamax".to_string())
         .stack_size(32 * 1024 * 1024)
         .spawn(move || {
-            state.write().unwrap().engine.get_best_move(&board.unwrap(), 2)
+            state.write().unwrap().engine.get_best_move(&board.unwrap(), 3)
         }).unwrap();
     let best_move = thread.join().unwrap();
     Ok(Json(best_move))
