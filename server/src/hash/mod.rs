@@ -4,6 +4,7 @@ use crate::board::{Pieces, Teams};
 use crate::board::board::ChessBoard;
 use crate::board::state::CastlingSides;
 
+#[derive(Clone)]
 pub struct ZobristHash {
     piece_keys: [[[u64; 64]; 6]; 2],
     turn_key: u64,

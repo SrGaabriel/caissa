@@ -1,9 +1,10 @@
 use std::fmt::Display;
+use serde::{Deserialize, Serialize};
 
 pub mod fen;
 mod square;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash, Serialize, Deserialize)]
 // Goes from 0 to 7
 pub struct Vector {
     pub x: i32,

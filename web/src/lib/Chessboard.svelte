@@ -314,11 +314,9 @@
 	}
 
 	function highlightPossibleMoves(x: number, y: number) {
-		fetchPieceMoves(board.toFen(), {x,y}).then((moves) => {
-			moves.moves.forEach((move) => {
-				console.log(move.to.x, move.to.y);
-				highlightCell(move.to.x, move.to.y, Highlighting.POSSIBLE_MOVE);
-			});
+		const moves = board.calculateMovesFor(x,y);
+		moves.forEach((move) => {
+			highlightCell(move.to[0], move.to[1], Highlighting.POSSIBLE_MOVE);
 		});
 	}
 
@@ -335,6 +333,7 @@
 	}
 
 	function isTeamAllowedToMove(team: Team): boolean {
+		console.log(opponent, team, opponent.team, teamToPlay);
 		const legal = !(opponent && team === opponent.team) && ((opponent && teamToPlay !== opponent.team) || (!opponent && teamToPlay === team));
 		console.log(legal);
 		return legal;

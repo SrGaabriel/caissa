@@ -23,7 +23,7 @@
         <Chessboard bind:board={board} opponent={null}/>
         <div id="sidebar">
             <div class="sidebar-overheader">
-                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.BLACK ? '#191a19' : '#dbdbdb'}`}></div>
+                <div class="turn-color-palette" style={`--turn-color: ${teamToPlay === Team.Black ? '#191a19' : '#dbdbdb'}`}></div>
                 <span class="team-to-play">{ending ? getGameEnding() : `${teamToPlay} to play!`}</span>
             </div>
         </div>

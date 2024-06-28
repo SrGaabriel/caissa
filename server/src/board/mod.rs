@@ -1,5 +1,5 @@
 use std::ops::{BitAnd, BitOr, BitOrAssign, Div, Not, Rem};
-
+use serde::Serialize;
 use crate::game::Vector;
 
 pub mod board;
@@ -84,7 +84,7 @@ impl GamePiece {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct PossibleMove {
     pub origin: Vector,
     pub target: Vector
