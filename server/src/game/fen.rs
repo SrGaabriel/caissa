@@ -28,7 +28,7 @@ pub fn new_board(fen: &str) -> Option<ChessBoard> {
                 };
                 let team = if c.is_ascii_uppercase() { Teams::WHITE } else { Teams::BLACK };
                 let bitboard = bit_position.get_pieces(team, piece) | BitBoard(1 << (rank * 8 + file));
-                bit_position.set_bitboard(team, piece, bitboard);
+                bit_position.move_or(team, piece, bitboard);
                 mail_box.set_piece_at(rank * 16 + file, Some(GamePiece::from(piece, team)));
                 file += 1;
             }

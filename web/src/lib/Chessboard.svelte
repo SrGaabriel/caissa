@@ -5,11 +5,13 @@
 	import { getMoveSound } from '$lib/sound/sounds';
 	import { linear } from 'svelte/easing';
 	import type { Player } from '$lib/game/logic';
+	import {fetchThreats} from "$lib/api/moves";
 
 	type Cell = {
 		x: number,
 		y: number,
 		highlighting: Highlighting | null,
+		special: boolean
 	}
 
 	type CursorPosition = {
@@ -259,6 +261,26 @@
 		console.log(sound);
 		const audio = new Audio(`sounds/${getMoveSound(move)}.mp3`);
 		audio.play();
+
+		// This is only for debugging purposes
+		// let threats = fetchThreats(board.toFen(), teamToPlay);
+		// threats.then((res) => {
+		// 	clearHighlights(false);
+		// 	// Here we'll mark the special cells as the cells who were returned from our request (which are still in index 0-63 form), but we mustn't forget to reset the previous special cells
+		// 	cells.forEach((cell) => {
+		// 		if (cell.special) {
+		// 			cell.special = false;
+		// 		}
+		// 	});
+		// 	res.threats.forEach((threat) => {
+		// 		const cell = findCell(threat % 8 + 1, Math.floor(threat / 8) + 1);
+		// 		if (cell) {
+		// 			cell.special = true;
+		// 		}
+		// 	});
+		// 	cells = cells;
+		// });
+
 		await opponent?.onMove(move);
 		return true;
 	}
@@ -349,12 +371,14 @@
 			data-ypos={cell.y}
 			data-haspiece={piece != null}
 			data-highlighting={cell.highlighting}
+			data-special={cell.special}
 			draggable="false"
 			on:click={handleSquareClick}
 			on:mousedown={handleMouseDown}
 			on:contextmenu={handleContextMenu}
 			class={`cell ${(cell.y + cell.x) % 2 === 0 ? 'black' : 'white'}`}
 		>
+			<span class="cell-number">{(cell.y-1) * 8 + cell.x-1}</span>
 			{#if piece != null}
 				<img
 					id={`asset-${cell.x}-${cell.y}`}
@@ -385,7 +409,8 @@
         grid-template-columns: repeat(8, 100px);
         grid-template-rows: repeat(8, 100px);
         gap: 0;
-    }
+		user-select: none;
+	}
 
     .cell:first-child {
         border-top-left-radius: 16px;
@@ -401,6 +426,18 @@
         justify-content: center;
         align-items: center;
     }
+
+	.cell-number {
+		top: 0;
+		right: 0;
+		position: absolute;
+		z-index: 3;
+		font-family: sans-serif;
+		color: #035648;
+		font-weight: 600;
+		font-size: 18px;
+		user-select: none;
+	}
 
     .cell[data-haspiece="true"] {
         cursor: pointer;
@@ -457,4 +494,12 @@
     .cell.white {
         background-color: #ebd9af;
     }
+
+	.cell.white[data-special="true"] {
+		background-color: #f7f7ae;
+	}
+
+	.cell.black[data-special="true"] {
+		background-color: #f7f7ae;
+	}
 </style>

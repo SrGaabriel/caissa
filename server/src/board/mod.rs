@@ -57,7 +57,7 @@ impl GamePiece {
             Pieces::ROOK => GamePiece::Rook(team),
             Pieces::QUEEN => GamePiece::Queen(team),
             Pieces::KING => GamePiece::King(team),
-            _ => unreachable!()
+            _ => panic!("Invalid piece {}", piece)
         }
     }
 
@@ -149,9 +149,14 @@ impl BitPosition {
         !(self.bb_sides[Teams::BLACK] | self.bb_sides[Teams::WHITE])
     }
 
-    pub fn set_bitboard(&mut self, team: Team, piece: Piece, bitboard: BitBoard) {
-        self.bb_pieces[team][piece] = bitboard;
+    pub fn move_or(&mut self, team: Team, piece: Piece, bitboard: BitBoard) {
+        self.bb_pieces[team][piece] = self.bb_pieces[team][piece] | bitboard;
         self.bb_sides[team] = self.bb_sides[team] | bitboard;
+    }
+
+    pub fn move_and(&mut self, team: Team, piece: Piece, bitboard: BitBoard) {
+        self.bb_pieces[team][piece] = self.bb_pieces[team][piece] & bitboard;
+        self.bb_sides[team] = self.bb_sides[team] & bitboard;
     }
 
     pub fn get_pieces(&self, team: Team, piece: Piece) -> BitBoard {
@@ -263,5 +268,94 @@ impl BitBoard {
 
     pub fn count_ones(&self) -> u32 {
         self.0.count_ones()
+    }
+}
+
+#[derive(Serialize, Debug, Hash, Clone)]
+pub struct CompletedMove {
+    pub origin: u8,
+    pub target: u8,
+    capture: u8,
+    pub bits: u8,
+}
+
+impl CompletedMove {
+    pub const PROMOTION: u8 = 0b0000_0001;
+    pub const CASTLING: u8 = 0b0000_0010;
+    pub const EN_PASSANT: u8 = 0b0000_0100;
+    pub const CHECK: u8 = 0b0000_1000;
+    pub const CHECKMATE: u8 = 0b0001_0000;
+    pub const STALEMATE: u8 = 0b0010_0000;
+
+    pub fn clean(origin: u8, target: u8) -> Self {
+        Self { origin, target, bits: 0u8, capture: 0u8 }
+    }
+
+    pub fn new(origin: u8, target: u8, bits: u8, capture: u8) -> Self {
+        Self { origin, target, bits, capture }
+    }
+
+    pub fn set_capture(&mut self, capture: Piece) {
+        self.capture = (capture+1) as u8;
+    }
+
+    pub fn set_promotion(&mut self) {
+        self.bits |= Self::PROMOTION;
+    }
+
+    pub fn set_castling(&mut self) {
+        self.bits |= Self::CASTLING;
+    }
+
+    pub fn set_en_passant(&mut self) {
+        self.bits |= Self::EN_PASSANT;
+    }
+
+    pub fn set_check(&mut self) {
+        self.bits |= Self::CHECK;
+    }
+
+    pub fn set_checkmate(&mut self) {
+        self.bits |= Self::CHECKMATE;
+    }
+
+    pub fn set_stalemate(&mut self) {
+        self.bits |= Self::STALEMATE;
+    }
+
+    pub fn is_promotion(&self) -> bool {
+        self.bits & Self::PROMOTION != 0
+    }
+
+    pub fn is_castling(&self) -> bool {
+        self.bits & Self::CASTLING != 0
+    }
+
+    pub fn is_en_passant(&self) -> bool {
+        self.bits & Self::EN_PASSANT != 0
+    }
+
+    pub fn is_check(&self) -> bool {
+        self.bits & Self::CHECK != 0
+    }
+
+    pub fn is_checkmate(&self) -> bool {
+        self.bits & Self::CHECKMATE != 0
+    }
+
+    pub fn is_stalemate(&self) -> bool {
+        self.bits & Self::STALEMATE != 0
+    }
+
+    pub fn is_capture(&self) -> bool {
+        self.capture != 0
+    }
+
+    pub fn get_capture(&self) -> Piece {
+        (self.capture-1) as Piece
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.origin < 64 && self.target < 64
     }
 }

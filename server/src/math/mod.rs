@@ -19,7 +19,7 @@ pub fn individually_mask_piece_moves(
     opponent_threats: Option<&BitBoard>
 ) -> BitBoard {
     match piece {
-        Pieces::PAWN => pawns::mask_all_pawn_moves(&BitBoard(bit), empty_spaces, opponent_pieces, en_passant_square, team),
+        Pieces::PAWN => pawns::mask_pawn_moves(bit, empty_spaces, opponent_pieces, en_passant_square, team),
         Pieces::KNIGHT => knights::mask_knight_moves(bit),
         Pieces::BISHOP => sliding::properly_mask_bishop_moves(bit, occupied_spaces),
         Pieces::ROOK => sliding::properly_mask_rook_moves(bit, occupied_spaces),

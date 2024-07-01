@@ -1,11 +1,11 @@
-use crate::board::{Piece, Pieces, PossibleMove};
+use crate::board::{CompletedMove, Piece, Pieces, PossibleMove};
 use crate::board::board::ChessBoard;
 
 pub mod minimax;
 
 pub trait ChessEngine {
     fn new() -> Self;
-    fn get_best_move(&mut self, board: &ChessBoard, depth: u32) -> PossibleMove;
+    fn get_best_move(&mut self, board: &ChessBoard, depth: u8) -> CompletedMove;
 }
 
 pub fn get_piece_value(piece: Piece) -> i32 {

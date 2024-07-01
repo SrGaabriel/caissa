@@ -8,11 +8,13 @@ use tower_http::add_extension::AddExtensionLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::board::{BitBoard, MailBox, Teams};
+use crate::board::{BitBoard, BitPosition, GamePiece, MailBox, Pieces, Teams};
 use crate::engine::ChessEngine;
 use crate::engine::minimax::MinimaxEngine;
-use crate::game::fen;
-use crate::server::{get_best_move, get_piece_moves, get_team_moves};
+use crate::game::{fen, Vector};
+use crate::math::{individually_mask_piece_moves, iterate_bits};
+use crate::math::pawns::mask_all_pawn_moves;
+use crate::server::{get_best_move, get_piece_moves, get_team_moves, get_threatened_squares};
 
 pub mod board;
 pub mod game;
@@ -24,12 +26,14 @@ mod server;
 #[tokio::main]
 async fn main() {
     let state = AppState {
-        engine: MinimaxEngine::new()
+        engine: MinimaxEngine::new(),
+        depth: 6
     };
     let app = Router::new()
         .route("/api/playground/moves/best", post(get_best_move))
         .route("/api/playground/moves/team", post(get_team_moves))
         .route("/api/playground/moves/piece", post(get_piece_moves))
+        .route("/api/playground/moves/threats", post(get_threatened_squares))
         .layer(CorsLayer::permissive())
         .layer(
             ServiceBuilder::new()
@@ -46,7 +50,8 @@ async fn main() {
 
 #[derive(Clone)]
 pub struct AppState {
-    pub engine: MinimaxEngine
+    pub engine: MinimaxEngine,
+    pub depth: u8
 }
 
 type SharedState = Arc<RwLock<AppState>>;
@@ -73,6 +78,34 @@ pub fn printm(mail_box: &MailBox) {
         for file in 0..8 {
             let index = rank * 16 + file;
             if let Some(piece) = mail_box.get_piece_at(index) {
+                print!("{} ", piece.get_piece());
+            } else {
+                print!("- ");
+            }
+        }
+        println!();
+    }
+}
+
+// This method will print a BitPosition in teh same way printm prints a MailBox
+// Instead of print (BitBoard), it will display the actual number of the pieces
+pub fn printbp(bit_position: &BitPosition) {
+    for rank in (0..8).rev() {
+        for file in 0..8 {
+            let index = rank * 8 + file;
+            let mut piece = None;
+            for team in 0..2 {
+                for piece_type in 0..6 {
+                    if bit_position.bb_pieces[team][piece_type].0 & (1 << index) != 0 {
+                        piece = Some(GamePiece::from(piece_type, team));
+                        break;
+                    }
+                }
+                if piece.is_some() {
+                    break;
+                }
+            }
+            if let Some(piece) = piece {
                 print!("{} ", piece.get_piece());
             } else {
                 print!("- ");
