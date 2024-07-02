@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-
-use crate::board::{CompletedMove, get_opposite_team, PossibleMove};
+use crate::board::{CompletedMove, get_opposite_team, PossibleMove, Team};
 use crate::board::board::ChessBoard;
 use crate::engine::ChessEngine;
 use crate::hash::ZobristHash;
@@ -8,56 +7,57 @@ use crate::hash::ZobristHash;
 #[derive(Clone)]
 pub struct MinimaxEngine {
     zobrist: ZobristHash,
-    min_transposition_table: HashMap<u64, i32>,
-    max_transposition_table: HashMap<u64, i32>,
+    transposition_table: HashMap<u64, i32>,
 }
 
 impl MinimaxEngine {
-    fn minimax(&mut self, board: &mut ChessBoard, depth: u8, maximizing_player: bool) -> i32 {
-        let hash = self.zobrist.hash(board);
-        if maximizing_player {
-            if let Some(score) = self.max_transposition_table.get(&hash) {
-                return *score;
-            }
-        } else {
-            if let Some(score) = self.min_transposition_table.get(&hash) {
-                return *score;
-            }
+    fn minimax(&mut self, board: &mut ChessBoard, depth: u8, team: Team, alpha: i32, beta: i32) -> i32 {
+        let maximizing = team == board.state.team_to_play;
+        let zobrist = self.zobrist.hash(&board);
+
+        if let Some(score) = self.transposition_table.get(&zobrist) {
+            return *score;
         }
+
         if depth == 0 {
-            let score = board.evaluate(board.state.team_to_play);
-            if maximizing_player {
-                self.max_transposition_table.insert(hash, score);
-            } else {
-                self.min_transposition_table.insert(hash, score);
-            }
+            let score = board.evaluate(team);
+            self.transposition_table.insert(zobrist, score);
             return score;
         }
 
-        if maximizing_player {
-            let mut max_eval = i32::MIN;
-            for mv in board.generate_moves(board.state.team_to_play) {
-                let mv = board.play_move(mv.origin, mv.target, true);
-                if let Some(mov) = mv {
-                    let eval = -self.minimax(board, depth - 1, false);
-                    board.undo_move(mov);
-                    max_eval = max_eval.max(eval);
+        let mut alpha = alpha;
+        let mut beta = beta;
+
+        if maximizing {
+            let mut best_score = i32::MIN;
+            for mv in board.generate_moves(team) {
+                if let Some(mov) = board.play_move(mv.origin, mv.target, true) {
+                    let score = -self.minimax(board, depth - 1, get_opposite_team(team), alpha, beta);
+                    board.undo_move(&mov);
+                    best_score = best_score.max(score);
+                    alpha = alpha.max(best_score);
+                    if beta <= alpha {
+                        break; // Beta cut-off
+                    }
                 }
             }
-            self.max_transposition_table.insert(hash, max_eval);
-            max_eval
+            self.transposition_table.insert(zobrist, best_score);
+            return best_score;
         } else {
-            let mut min_eval = i32::MAX;
-            for mv in board.generate_moves(get_opposite_team(board.state.team_to_play)) {
-                let mv = board.play_move(mv.origin, mv.target, true);
-                if let Some(mov) = mv {
-                    let eval = -self.minimax(board, depth - 1, true);
-                    board.undo_move(mov);
-                    min_eval = min_eval.min(eval);
+            let mut best_score = i32::MAX;
+            for mv in board.generate_moves(team) {
+                if let Some(mov) = board.play_move(mv.origin, mv.target, true) {
+                    let score = self.minimax(board, depth - 1, get_opposite_team(team), alpha, beta);
+                    board.undo_move(&mov);
+                    best_score = best_score.min(score);
+                    beta = beta.min(best_score);
+                    if beta <= alpha {
+                        break; // Alpha cut-off
+                    }
                 }
             }
-            self.min_transposition_table.insert(hash, min_eval);
-            min_eval
+            self.transposition_table.insert(zobrist, best_score);
+            return best_score;
         }
     }
 }
@@ -66,27 +66,27 @@ impl ChessEngine for MinimaxEngine {
     fn new() -> Self {
         MinimaxEngine {
             zobrist: ZobristHash::new(),
-            min_transposition_table: HashMap::new(),
-            max_transposition_table: HashMap::new(),
+            transposition_table: HashMap::new(),
         }
     }
 
     fn get_best_move(&mut self, board: &ChessBoard, depth: u8) -> CompletedMove {
-        let mut board_clone = &mut board.clone();
+        let mut board_clone = board.clone();
         let mut best_move = None;
         let mut best_score = i32::MIN;
 
         for mv in board.generate_moves(board.state.team_to_play) {
-            let mv = board_clone.play_move(mv.origin, mv.target, true);
-            if let Some(mov) = mv {
-                let score = -self.minimax(&mut board_clone, depth - 1, false);
-                board_clone.undo_move(mov.clone());
+            if let Some(mov) = board_clone.play_move(mv.origin, mv.target, true) {
+                let score = -self.minimax(&mut board_clone, depth - 1, get_opposite_team(board.state.team_to_play), i32::MIN, i32::MAX);
+                board_clone.undo_move(&mov);
+                println!("Move: {:?}, Score: {}", mv, score); // Debug log
                 if score > best_score {
                     best_score = score;
                     best_move = Some(mov);
                 }
             }
         }
-        best_move.unwrap()
+        println!("Best move: {:?}, Best score: {}", best_move, best_score); // Debug log
+        best_move.expect("No moves found")
     }
 }

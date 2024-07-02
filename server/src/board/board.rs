@@ -175,7 +175,7 @@ impl ChessBoard {
                         if !hypothetical_board.is_in_check(team) {
                             moves.push(hypothetical_move.clone());
                         }
-                        hypothetical_board.undo_move(hypothetical_move);
+                        hypothetical_board.undo_move(&hypothetical_move);
                     }
                 });
             }
@@ -243,7 +243,7 @@ impl ChessBoard {
 
     pub fn undo_move(
         &mut self,
-        completed_move: CompletedMove
+        completed_move: &CompletedMove
     ) {
         let origin_x = completed_move.origin % 8;
         let origin_y = completed_move.origin / 8;

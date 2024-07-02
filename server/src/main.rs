@@ -11,9 +11,6 @@ use tower_http::trace::TraceLayer;
 use crate::board::{BitBoard, BitPosition, GamePiece, MailBox, Pieces, Teams};
 use crate::engine::ChessEngine;
 use crate::engine::minimax::MinimaxEngine;
-use crate::game::{fen, Vector};
-use crate::math::{individually_mask_piece_moves, iterate_bits};
-use crate::math::pawns::mask_all_pawn_moves;
 use crate::server::{get_best_move, get_piece_moves, get_team_moves, get_threatened_squares};
 
 pub mod board;
@@ -48,7 +45,6 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-#[derive(Clone)]
 pub struct AppState {
     pub engine: MinimaxEngine,
     pub depth: u8
